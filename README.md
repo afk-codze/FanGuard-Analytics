@@ -24,3 +24,8 @@ A smart IoT monitoring solution for power lines, providing real-time weather dat
    Ensure that the duty cycle plot is properly scaled, and correct the units of measurement. Additionally, implement hibernation mode instead of deep sleep.
 
 ---
+### Proposalsv to adapt the project
+
+1. Monitoring environment to make irrigation system smarter
+2. Monitoring environment to give people information about DIAG weather conditions
+3. Monitoring roof's solar panel components condition or best solora exposure
