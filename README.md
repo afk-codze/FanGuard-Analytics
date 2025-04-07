@@ -29,3 +29,6 @@ A smart IoT monitoring solution for power lines, providing real-time weather dat
 1. Monitoring environment to make irrigation system smarter
 2. Monitoring environment to give people information about DIAG weather conditions
 3. Monitoring roof's solar panel components condition for best solar exposure
+
+
+test
