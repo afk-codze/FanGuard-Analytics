@@ -10,4 +10,5 @@ import java.util.List;
 public interface DatastreamRepository extends JpaRepository<Datastream, Long> {
 
     List<Datastream> getAllById(Long id);
+    List<Datastream> findAllByOrderByTimestampAsc();  // Ascending order}
 }
