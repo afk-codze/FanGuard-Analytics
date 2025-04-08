@@ -14,7 +14,7 @@ public class Datastream {
     @Column(name = "temperature")
     private Double temperature;
 
-    @Column(name = "timestamp", columnDefinition = "TIMESTAMPTZ")
+    @Column(name = "timestamp")
     private LocalDateTime timestamp;
 
     public Datastream() {
@@ -22,7 +22,7 @@ public class Datastream {
     }
 
     public Datastream(Double temperature) {
-        super();
+        this();
         this.temperature = temperature;
     }
 
