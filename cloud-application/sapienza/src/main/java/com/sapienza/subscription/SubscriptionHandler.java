@@ -38,8 +38,8 @@ public class SubscriptionHandler {
                 System.out.println("Received: " + message + "on topic: water");
                 break;
             case "anomalies/temperature":
-                temperatureAnomalyRepository.save(new TemperatureAnomaly());
-                System.out.println("Received: " + message + "on topic: temperature");
+                temperatureAnomalyRepository.save(new TemperatureAnomaly(Double.valueOf(message)));
+                System.out.println("Received: " + message + "on topic: temperature spike");
                 break;
             default:
                 System.out.println("Unknown topic: " + topic);
