@@ -53,21 +53,8 @@ public class DashboardApplication {
 			public void handleMessage(Message<?> message) throws MessagingException {
 				String topic = (String) message.getHeaders().get("mqtt_receivedTopic");
 				String payload = (String) message.getPayload();
-
-				switch (topic) {
-					case "datastream":
-						System.out.println("Received: " + payload + "on topic: datastream");
-						break;
-					case "anomalies/water":
-						System.out.println("Received: " + payload + "on topic: water");
-						break;
-					case "anomalies/temperature":
 						subscriptionHandler.store(topic, payload);
-						System.out.println("Received: " + payload + "on topic: temperature");
-						break;
-					default:
-						System.out.println("Unknown topic: " + topic);
-				}
+
 
 			}
 

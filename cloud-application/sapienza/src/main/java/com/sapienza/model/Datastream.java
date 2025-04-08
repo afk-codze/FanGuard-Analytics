@@ -5,8 +5,8 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "temperature")
-public class Temperature {
+@Table(name = "datastream")
+public class Datastream {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
@@ -14,14 +14,14 @@ public class Temperature {
     @Column(name = "temperature")
     private Double temperature;
 
-    @Column(name = "timestamp")
+    @Column(name = "timestamp", columnDefinition = "TIMESTAMPTZ")
     private LocalDateTime timestamp;
 
-    public Temperature() {
+    public Datastream() {
         this.timestamp = LocalDateTime.now();
     }
 
-    public Temperature(Double temperature) {
+    public Datastream(Double temperature) {
         super();
         this.temperature = temperature;
     }
