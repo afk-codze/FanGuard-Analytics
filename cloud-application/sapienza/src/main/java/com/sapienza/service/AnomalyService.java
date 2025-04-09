@@ -23,12 +23,12 @@ public class AnomalyService {
 
     public List<AnomalyDto> getMostRecentAnomalies(int maxAnomalies) {
 
-        //get last 10 water
+        //get last maxanomalies waterAnomaly Objects
         List<WaterAnomaly> waterAnomalies = waterAnomalyRepository.findTop10ByOrderByTimestampDesc();
-        //get last 10 temp
+        //get last maxanomalies temperatureAnomaly Objects
         List<TemperatureAnomaly> temperatureAnomalies = temperatureAnomalyRepository.findTop10ByOrderByTimestampDesc();
-        //merge and sort by date time
 
+        //merge and sort by date time
         List<AnomalyDto> anomalies = new LinkedList<>();
 
         for (WaterAnomaly wa : waterAnomalies) {
@@ -42,7 +42,7 @@ public class AnomalyService {
         // Sort all anomalies by timestamp descending
         anomalies.sort((a1, a2) -> a2.getTimestamp().compareTo(a1.getTimestamp()));
 
-        // Keep only top 10
+        // Keep only top #maxAnomalies
         if (anomalies.size() > maxAnomalies) {
             anomalies = anomalies.subList(0, maxAnomalies);
         }

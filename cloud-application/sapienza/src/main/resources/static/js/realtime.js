@@ -32,7 +32,8 @@ $(document).ready(function () {
             },
             info: ""
         },
-        "ordering" :false
+        "ordering" :false,
+        "lengthChange": false    // Hides the 10/25/50 dropdown
     });
 
 });
