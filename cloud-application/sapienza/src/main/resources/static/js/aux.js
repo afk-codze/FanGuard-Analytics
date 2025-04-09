@@ -145,8 +145,6 @@ function createDataset(db_data, realtime) {
     // var map = new Map();
 
 
-    // map = resourcesDatasetGeneration(map, db_data, realtime);
-    // map.forEach((value, key) => dataset.push(new Dataset(key, value)));
     var axes_data = [];
     db_data.forEach(obj => axes_data.push({x: obj.timestamp, y: obj.temperature}));
 

@@ -13,20 +13,14 @@ public class DashboardController{
     @Autowired
     SubscriptionHandler subscriptionHandler;
 
-    @GetMapping( "/realtime")
+    @GetMapping( "/")
     public String realtime(Model model) {
 
         return "realtime";
     }
 
-    @GetMapping( "/")
-    public String index(Model model) {
-
-        return "index";
-    }
-
     @GetMapping( "/log")
-    public String log(Model model) {
+    public String index(Model model) {
 
         return "log";
     }
