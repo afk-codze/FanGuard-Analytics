@@ -101,5 +101,6 @@ $('#reset').click(function (event) {
         anomaly_table.clear().draw();
         anomaly_table = null;
     }
+    firstCallTimestamp = null;
     clearInterval(interval_id);
 })
