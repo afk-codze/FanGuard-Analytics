@@ -198,14 +198,13 @@ void fft_sampling_temp_task(void *pvParameters) {
     
     add_to_window(temp_sample);
     
-    i++;
     variance = get_global_variance();
     
     if( (i+1) % (g_window_size) == 0){
       avg = calc_rolling_avg();
       send_avg_temp(avg);
     }
-
+    i++;
     printf ("[FFT] Variance: %.2f\n", variance);
     printf ("[FFT] Rolling avg: %.2f\n", avg);
 
