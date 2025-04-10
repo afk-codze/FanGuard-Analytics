@@ -64,7 +64,7 @@ function generateGraphs() {
 
 function generateAnomaliesTable(){
     $.ajax({
-        url: '/api/anomalies',
+        url: '/api/anomalies/realtime',
         type: 'GET',
         data: {
         },

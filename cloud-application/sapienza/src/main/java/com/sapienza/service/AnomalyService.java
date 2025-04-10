@@ -8,6 +8,7 @@ import com.sapienza.repository.WaterAnomalyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -20,17 +21,26 @@ public class AnomalyService {
     @Autowired
     TemperatureAnomalyRepository temperatureAnomalyRepository;
 
+    //merge and sort by date time
+    List<AnomalyDto> anomalies = new LinkedList<>();
 
-    public List<AnomalyDto> getMostRecentAnomalies(int maxAnomalies) {
+
+    public List<AnomalyDto> getMostRecentAnomaliesRealtime(int maxAnomalies) {
 
         //get last maxanomalies waterAnomaly Objects
         List<WaterAnomaly> waterAnomalies = waterAnomalyRepository.findTop10ByOrderByTimestampDesc();
         //get last maxanomalies temperatureAnomaly Objects
         List<TemperatureAnomaly> temperatureAnomalies = temperatureAnomalyRepository.findTop10ByOrderByTimestampDesc();
 
-        //merge and sort by date time
-        List<AnomalyDto> anomalies = new LinkedList<>();
 
+        encodeAnomalyDtoList(maxAnomalies, waterAnomalies, temperatureAnomalies);
+
+        System.out.println(anomalies);
+
+        return anomalies;
+    }
+
+    private void encodeAnomalyDtoList(int maxAnomalies, List<WaterAnomaly> waterAnomalies, List<TemperatureAnomaly> temperatureAnomalies) {
         for (WaterAnomaly wa : waterAnomalies) {
             anomalies.add(new AnomalyDto(wa.getId(), null, wa.getTimestamp()));
         }
@@ -46,9 +56,21 @@ public class AnomalyService {
         if (anomalies.size() > maxAnomalies) {
             anomalies = anomalies.subList(0, maxAnomalies);
         }
+    }
+
+    public List<AnomalyDto> getMostRecentAnomaliesTimeRange(int maxAnomalies, LocalDateTime start, LocalDateTime end) {
+
+        //get last maxanomalies waterAnomaly Objects
+        List<WaterAnomaly> waterAnomalies = waterAnomalyRepository.findTop10ByOrderByTimestampDesc();
+        //get last maxanomalies temperatureAnomaly Objects
+        List<TemperatureAnomaly> temperatureAnomalies = temperatureAnomalyRepository.findTop10ByOrderByTimestampDesc();
+
+
+        encodeAnomalyDtoList(maxAnomalies, waterAnomalies, temperatureAnomalies);
 
         System.out.println(anomalies);
 
         return anomalies;
+
     }
 }

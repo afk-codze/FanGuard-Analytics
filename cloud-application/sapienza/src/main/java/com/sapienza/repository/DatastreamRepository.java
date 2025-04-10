@@ -18,6 +18,6 @@ public interface DatastreamRepository extends JpaRepository<Datastream, Long> {
 
     @Query("select d \n" +
             "from Datastream d \n" +
-            "where d.timestamp between :start and :end")
+            "where d.timestamp between :start and :end order by timestamp asc")
     List<Datastream> findByTimeRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 }
