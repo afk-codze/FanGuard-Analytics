@@ -5,6 +5,7 @@ var anomaly_table;
 
 
 
+
 $(document).ready(function () {
     $('#realtime_submit').submit(function (event) {
         event.preventDefault();
@@ -20,21 +21,7 @@ $(document).ready(function () {
     });
 
 
-    anomaly_table = $('#anomalies_table').DataTable({
-        "paging": true,
-        "searching": false, // Disable search box
-        "info": false, // Disable info text,
-        "pageLength" : 15,
-        language: {
-            entries: {
-                _: 'anomalies',
-                1: 'anomaly'
-            },
-            info: ""
-        },
-        "ordering" :false,
-        "lengthChange": false    // Hides the 10/25/50 dropdown
-    });
+    anomaly_table = setAnomalyTable();
 
 });
 
@@ -90,6 +77,25 @@ function disableAnimation() {
         c.chart.update();
     })
 }
+
+function setAnomalyTable() {
+    return $('#anomalies_table').DataTable({
+        "paging": true,
+        "searching": false, // Disable search box
+        "info": false, // Disable info text,
+        "pageLength": 15,
+        language: {
+            entries: {
+                _: 'anomalies',
+                1: 'anomaly'
+            },
+            info: ""
+        },
+        "ordering": false,
+        "lengthChange": false    // Hides the 10/25/50 dropdown
+    });
+}
+
 // Reset graphs
 $('#reset').click(function (event) {
     event.preventDefault();
@@ -100,7 +106,6 @@ $('#reset').click(function (event) {
     chart_list = [];
     if(anomaly_table != null){
         anomaly_table.clear().draw();
-        anomaly_table = null;
     }
     firstCallTimestamp = null;
     clearInterval(interval_id);
