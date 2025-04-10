@@ -41,7 +41,7 @@ void send_temp_anomaly() {
   // Trigger alert
 }
 
-bool anomaly_detection(unsigned long ts, float sample, float variance)
+bool anomaly_detection(unsigned long ts, float sample, float variance);
 
 float calc_rolling_avg() {
   float sum = 0;
