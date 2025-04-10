@@ -1,7 +1,7 @@
 var sys_data;
 
 //List of CustomChart
-var chart_list = [];
+var chart_list = [] ;
 
 
 
@@ -13,23 +13,17 @@ $('#reset').click(function (event) {
 })
 
 $(document).ready(function () {
-    $('#gateway_data').submit(function (event) {
+    $('#log_submit').submit(function (event) {
         event.preventDefault();
 
-        var gateway_id_list = [];
         var start_timestamp = $('#start_time').val();
         var end_timestamp = $('#end_time').val();
 
 
-        $('input[type="checkbox"]:checked').each(function () {
-            gateway_id_list.push($(this).val()); // Add the value to the array
-        });
-
         $.ajax({
-            url: '/resources/getAllById&Timestamp',
+            url: '/api/datastream/timeRange',
             type: 'GET',
             data: {
-                id: gateway_id_list,
                 start: start_timestamp,
                 end: end_timestamp
             },
@@ -37,9 +31,7 @@ $(document).ready(function () {
                 // Assuming data is an array of objects
                 console.log(data);
                 if(data.length !== 0) {
-                    handleChartCreationAndUpdate("CPU_Usage", data, "cpu_usage");
-                    handleChartCreationAndUpdate("RAM_Usage", data, "ram_usage");
-                    handleChartCreationAndUpdate("NET_Usage", data, "net");
+                    handleChartCreationAndUpdate("Temperature", data,false);
                 }else{
                     destroyCharts();
                 }

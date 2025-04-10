@@ -6,7 +6,7 @@ var anomaly_table;
 
 
 $(document).ready(function () {
-    $('#gateway_data').submit(function (event) {
+    $('#realtime_submit').submit(function (event) {
         event.preventDefault();
 
 
@@ -42,7 +42,7 @@ function generateGraphs() {
 
 
     $.ajax({
-        url: '/api/datastream/all',
+        url: '/api/datastream/realtime',
         type: 'GET',
         data: {
         },

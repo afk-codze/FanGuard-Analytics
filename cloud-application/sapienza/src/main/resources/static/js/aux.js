@@ -23,7 +23,6 @@ function Dataset(id, sys_data) {
 function handleChartCreationAndUpdate(chartName, db_data, realtime = false) {
 
     var chart = $('#'.concat(chartName));
-    console.log(chart);
     if (chart.hasClass("0")) {
 
         chart_list.push(createChart(db_data, createDataset(db_data, realtime), chartName));
@@ -81,7 +80,9 @@ function createDataset(db_data, realtime) {
     var axes_data = [];
     db_data.forEach(obj => axes_data.push({x: obj.timestamp, y: obj.temperature}));
 
-    axes_data = timestampToElapsedTime(axes_data);
+    if(realtime){
+        axes_data = timestampToElapsedTime(axes_data);
+    }
     dataset.push(new Dataset("Temperature", axes_data));
 
     return dataset;

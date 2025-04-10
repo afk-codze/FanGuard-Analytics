@@ -20,7 +20,7 @@ public class DashboardController{
     }
 
     @GetMapping( "/log")
-    public String index(Model model) {
+    public String log(Model model) {
 
         return "log";
     }

@@ -1,6 +1,7 @@
 package com.sapienza.model;
 
 import jakarta.persistence.*;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -19,6 +20,7 @@ public class TemperatureAnomaly {
 
 
     @Column(name = "timestamp")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime timestamp;
 
     public TemperatureAnomaly() {

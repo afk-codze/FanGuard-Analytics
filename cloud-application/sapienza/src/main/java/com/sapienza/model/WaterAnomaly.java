@@ -1,6 +1,7 @@
 package com.sapienza.model;
 
 import jakarta.persistence.*;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -15,6 +16,7 @@ public class WaterAnomaly {
     private Long id;
 
     @Column(name = "timestamp")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime timestamp;
 
     public WaterAnomaly() {

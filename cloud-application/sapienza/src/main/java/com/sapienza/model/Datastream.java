@@ -1,6 +1,7 @@
 package com.sapienza.model;
 
 import jakarta.persistence.*;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 
@@ -15,6 +16,7 @@ public class Datastream {
     private Double temperature;
 
     @Column(name = "timestamp")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime timestamp;
 
     public Datastream() {
