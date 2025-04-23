@@ -4,40 +4,37 @@ import jakarta.persistence.*;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
 
 @Entity
-@Table(name = "temperatureanomaly")
-public class TemperatureAnomaly {
+@Table(name = "power_anomaly")
+public class PowerAnomaly {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    @Column(name = "temperature_spike")
-    private Double temperature_spike;
-
+    @Column(name = "power_spike")
+    private Double power_spike;
 
     @Column(name = "timestamp")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime timestamp;
 
-    public TemperatureAnomaly() {
+    public PowerAnomaly() {
         this.timestamp =LocalDateTime.now();
     }
 
-    public TemperatureAnomaly(Double temperature_spike) {
+    public PowerAnomaly(Double temperature_spike) {
         this();
-        this.temperature_spike = temperature_spike;
+        this.power_spike = temperature_spike;
     }
 
-    public Double getTemperature_spike() {
-        return temperature_spike;
+    public Double getPower_spike() {
+        return power_spike;
     }
 
-    public void setTemperature_spike(Double temperature_spike) {
-        this.temperature_spike = temperature_spike;
+    public void setPower_spike(Double temperature_spike) {
+        this.power_spike = temperature_spike;
     }
 
     public LocalDateTime getTimestamp() {

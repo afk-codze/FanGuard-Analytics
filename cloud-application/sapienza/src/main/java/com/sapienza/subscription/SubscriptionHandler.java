@@ -1,11 +1,11 @@
 package com.sapienza.subscription;
 
 import com.sapienza.model.Datastream;
-import com.sapienza.model.TemperatureAnomaly;
-import com.sapienza.model.WaterAnomaly;
+import com.sapienza.model.PowerAnomaly;
+import com.sapienza.model.VibrationAnomaly;
 import com.sapienza.repository.DatastreamRepository;
-import com.sapienza.repository.TemperatureAnomalyRepository;
-import com.sapienza.repository.WaterAnomalyRepository;
+import com.sapienza.repository.PowerAnomalyRepository;
+import com.sapienza.repository.VibrationAnomalyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,10 +16,10 @@ public class SubscriptionHandler {
     DatastreamRepository datastreamRepository;
 
     @Autowired
-    WaterAnomalyRepository waterAnomalyRepository;
+    VibrationAnomalyRepository vibrationAnomalyRepository;
 
     @Autowired
-    TemperatureAnomalyRepository temperatureAnomalyRepository;
+    PowerAnomalyRepository powerAnomalyRepository;
 
     // When receiving data on anomalies topic send an alert on the dashboard
     private void alert(String topic, String message) {
@@ -33,13 +33,13 @@ public class SubscriptionHandler {
                 System.out.println("Received: " + message + "on topic: datastream");
                 datastreamRepository.save(new Datastream(Double.valueOf(message)));
                 break;
-            case "anomalies/water":
-                waterAnomalyRepository.save(new WaterAnomaly());
-                System.out.println("Received: " + message + "on topic: water");
+            case "anomalies/vibration":
+                vibrationAnomalyRepository.save(new VibrationAnomaly(Double.valueOf(message)));
+                System.out.println("Received: " + message + "on topic: anomalies/vibration");
                 break;
-            case "anomalies/temperature":
-                temperatureAnomalyRepository.save(new TemperatureAnomaly(Double.valueOf(message)));
-                System.out.println("Received: " + message + "on topic: temperature spike");
+            case "anomalies/power":
+                powerAnomalyRepository.save(new PowerAnomaly(Double.valueOf(message)));
+                System.out.println("Received: " + message + "on topic: anomalies/power");
                 break;
             default:
                 System.out.println("Unknown topic: " + topic);

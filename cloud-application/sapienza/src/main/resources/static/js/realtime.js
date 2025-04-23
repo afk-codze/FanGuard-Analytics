@@ -36,7 +36,7 @@ function generateGraphs() {
         success: function (data) {
             // Assuming data is an array of objects
             if (data.length !== 0) {
-                handleChartCreationAndUpdate("Temperature", data, true);
+                handleChartCreationAndUpdate("Power", data, true);
                 disableAnimation();
             }else{
                 destroyCharts();

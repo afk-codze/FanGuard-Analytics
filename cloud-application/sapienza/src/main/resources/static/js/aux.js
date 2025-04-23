@@ -83,7 +83,7 @@ function createDataset(db_data, realtime) {
     if(realtime){
         axes_data = timestampToElapsedTime(axes_data);
     }
-    dataset.push(new Dataset("Temperature", axes_data));
+    dataset.push(new Dataset("Power", axes_data));
 
     return dataset;
 
@@ -128,10 +128,11 @@ function fillAnomaliesTable(data) {
 
         var anomalyDetails = "";
         var anomalyData = [];
-        if (anomaly.temperature_spike != null) {
-            anomalyDetails = "Temperature Spike! " + anomaly.temperature_spike.toString() + "°C ";
+        console.log(anomaly);
+        if (anomaly.type == "POWER") {
+            anomalyDetails = "Power Spike detected! : " + anomaly.value_spike.toString() + " mW ";
         } else {
-            anomalyDetails = "Water! "
+            anomalyDetails = "Vibration Spike detected : " + anomaly.value_spike.toString() + " Hz ";
         }
 
         anomalyDetails = anomalyDetails + "detected at " + anomaly.timestamp;

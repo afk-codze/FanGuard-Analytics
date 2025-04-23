@@ -1,10 +1,10 @@
 package com.sapienza.service;
 
 import com.sapienza.dto.AnomalyDto;
-import com.sapienza.model.TemperatureAnomaly;
-import com.sapienza.model.WaterAnomaly;
-import com.sapienza.repository.TemperatureAnomalyRepository;
-import com.sapienza.repository.WaterAnomalyRepository;
+import com.sapienza.model.PowerAnomaly;
+import com.sapienza.model.VibrationAnomaly;
+import com.sapienza.repository.PowerAnomalyRepository;
+import com.sapienza.repository.VibrationAnomalyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,10 +16,10 @@ import java.util.List;
 public class AnomalyService {
 
     @Autowired
-    WaterAnomalyRepository waterAnomalyRepository;
+    VibrationAnomalyRepository vibrationAnomalyRepository;
 
     @Autowired
-    TemperatureAnomalyRepository temperatureAnomalyRepository;
+    PowerAnomalyRepository powerAnomalyRepository;
 
     //merge and sort by date time
     List<AnomalyDto> anomalies = new LinkedList<>();
@@ -27,26 +27,26 @@ public class AnomalyService {
 
     public List<AnomalyDto> getMostRecentAnomaliesRealtime(int maxAnomalies) {
 
-        //get last maxanomalies waterAnomaly Objects
-        List<WaterAnomaly> waterAnomalies = waterAnomalyRepository.findTop10ByOrderByTimestampDesc();
-        //get last maxanomalies temperatureAnomaly Objects
-        List<TemperatureAnomaly> temperatureAnomalies = temperatureAnomalyRepository.findTop10ByOrderByTimestampDesc();
+        //get last maxanomalies vibrationAnomalies Objects
+        List<VibrationAnomaly> vibrationAnomalies = vibrationAnomalyRepository.findTop10ByOrderByTimestampDesc();
+        //get last maxanomalies PowerAnomalies Objects
+        List<PowerAnomaly> powerAnomalies = powerAnomalyRepository.findTop10ByOrderByTimestampDesc();
 
 
-        encodeAnomalyDtoList(maxAnomalies, waterAnomalies, temperatureAnomalies);
+        encodeAnomalyDtoList(maxAnomalies, vibrationAnomalies, powerAnomalies);
 
-        System.out.println(anomalies);
+        System.out.println(anomalies.toString());
 
         return anomalies;
     }
 
-    private void encodeAnomalyDtoList(int maxAnomalies, List<WaterAnomaly> waterAnomalies, List<TemperatureAnomaly> temperatureAnomalies) {
-        for (WaterAnomaly wa : waterAnomalies) {
-            anomalies.add(new AnomalyDto(wa.getId(), null, wa.getTimestamp()));
+    private void encodeAnomalyDtoList(int maxAnomalies, List<VibrationAnomaly> vibrationAnomalies, List<PowerAnomaly> powerAnomalies) {
+        for (VibrationAnomaly anomaly : vibrationAnomalies) {
+            anomalies.add(new AnomalyDto(anomaly.getId(), anomaly.getVibration_spike(), anomaly.getTimestamp(), AnomalyDto.VIBRATION));
         }
 
-        for (TemperatureAnomaly ta : temperatureAnomalies) {
-            anomalies.add(new AnomalyDto(ta.getId(), ta.getTemperature_spike(), ta.getTimestamp()));
+        for (PowerAnomaly anomaly : powerAnomalies) {
+            anomalies.add(new AnomalyDto(anomaly.getId(), anomaly.getPower_spike(), anomaly.getTimestamp(),AnomalyDto.POWER));
         }
 
         // Sort all anomalies by timestamp descending
@@ -60,15 +60,15 @@ public class AnomalyService {
 
     public List<AnomalyDto> getMostRecentAnomaliesTimeRange(int maxAnomalies, LocalDateTime start, LocalDateTime end) {
 
-        //get last maxanomalies waterAnomaly Objects
-        List<WaterAnomaly> waterAnomalies = waterAnomalyRepository.findTop10ByOrderByTimestampDesc();
-        //get last maxanomalies temperatureAnomaly Objects
-        List<TemperatureAnomaly> temperatureAnomalies = temperatureAnomalyRepository.findTop10ByOrderByTimestampDesc();
+        //get last maxanomalies vibrationAnomalies Objects
+        List<VibrationAnomaly> vibrationAnomalies = vibrationAnomalyRepository.findTop10ByOrderByTimestampDesc();
+        //get last maxanomalies PowerAnomalies Objects
+        List<PowerAnomaly> powerAnomalies = powerAnomalyRepository.findTop10ByOrderByTimestampDesc();
 
 
-        encodeAnomalyDtoList(maxAnomalies, waterAnomalies, temperatureAnomalies);
+        encodeAnomalyDtoList(maxAnomalies, vibrationAnomalies, powerAnomalies);
 
-        System.out.println(anomalies);
+        System.out.println(anomalies.toString());
 
         return anomalies;
 

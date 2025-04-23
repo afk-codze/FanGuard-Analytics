@@ -41,7 +41,7 @@ function generateGraphs() {
             // Assuming data is an array of objects
                 console.log(data);
             if (data.length !== 0) {
-                handleChartCreationAndUpdate("Temperature", data, false);
+                handleChartCreationAndUpdate("Power", data, false);
             } else {
                 destroyCharts();
             }
