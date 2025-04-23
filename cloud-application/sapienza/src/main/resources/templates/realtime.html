@@ -19,7 +19,6 @@
     <div class="navbar-content">
         <div class="navbar-title">Monitoring System</div>
         <div class="navbar-links">
-            <a th:href="@{/index}">Home</a>
             <a th:href="@{/}">Realtime Graph</a>
             <a th:href="@{/log}">Log</a>
         </div>
@@ -28,12 +27,12 @@
 
 <div class="container"></div>
 <div class="w-1/2 justify-self-center">
-    <form id="realtime_submit" class=" m-10 shadow-lg ring-1 ring-black ring-opacity-5   place-content-evenly">
+    <form id="realtime_submit" class=" m-10 shadow-lg ring-1 ring-black ring-opacity-5  rounded-md  place-content-evenly bg-white">
 
         <p class="m-6 text-center font-sans font-medium break-keep ">
 
-        Welcome to our server monitoring system, here you can monitor your server rack environmental situation.<br>
-        Click on submit to start generating the realtime graph about your machine temperature situation.<br>
+        Welcome to our server monitoring system, here you can monitor your server fan situation.<br>
+        Click on submit to start generating the realtime graph about how much power (mW) is the fan consuming.<br>
         You will also be provided with a log all the anomalies reported, updated in realtime as well!
         </p>
         <div class="mt-4  w-3/4 col-span-2 grid grid-cols-2">

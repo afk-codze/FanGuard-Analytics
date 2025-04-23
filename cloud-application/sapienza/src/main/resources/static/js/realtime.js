@@ -44,7 +44,7 @@ function generateGraphs() {
 
         },
         error: function () {
-            alert('Error fetching data');
+            console.log('Error fetching data');
         }
     });
 }
@@ -66,7 +66,7 @@ function generateAnomaliesTable(){
 
         },
         error: function () {
-            alert('Error fetching data');
+            console.log('Error fetching data');
         }
     });
 }

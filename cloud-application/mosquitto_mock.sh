@@ -8,9 +8,9 @@ while true; do
     value=$(printf "%.2f" "$value")
 
     # Publish to MQTT
-    mosquitto_pub -t "anomalies/water" -m "$value"
+    mosquitto_pub -t "anomalies/power" -m "$value"
 
-   mosquitto_pub -t "anomalies/temperature" -m "$value"
+   mosquitto_pub -t "anomalies/vibration" -m "$value"
 
        mosquitto_pub -t "datastream" -m "$value"
 
