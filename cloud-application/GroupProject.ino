@@ -17,13 +17,22 @@ const char* ssid = "Angelo";
 const char* password = "Pompeo00";
 const char* mqttServer = "192.168.56.34";  //ip address of smartphone
 int port = 1883;
-const char* topic = "angelo/signal";
+const char* topic = "anomalies/power";
 char clientId[50];
+
+#define TOPIC_ANOMALY_POWER "anomalies/power"
+#define TOPIC_ANOMALY_VIBRATION "anomalies/vibration"
+#define TOPIC_DATASTREAM "datastream"
 
 QueueHandle_t transmissionQueue;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
+
+typedef struct {
+    String applicationPrefix; // e.g., "AP" for anomalies/power
+    double value;
+  } Data;
 
 
 void setup() {
@@ -32,7 +41,7 @@ void setup() {
 
 
 
-  transmissionQueue = xQueueCreate(QUEUE_SIZE, sizeof(double));
+  transmissionQueue = xQueueCreate(QUEUE_SIZE, sizeof(SensorData));
   if (transmissionQueue == 0) {
     printf("Failed to create queue= %p\n", transmissionQueue);
   }
@@ -48,7 +57,7 @@ void loop() {
 
 // Task to handle transmission
 void transmissionTask(void* pvParameters) {
-    double value;
+    Data dataToSend;
 
     // Connect to WiFi and MQTT server first
     establishConnections();
@@ -66,9 +75,9 @@ void transmissionTask(void* pvParameters) {
         }
 
         // Check if there is data in the transmission queue to send
-        if (xQueueReceive(transmissionQueue, &value, pdMS_TO_TICKS(2000))) {
-            sendOverWifiMqtt(value);  // Send the data over MQTT
-        }
+        if (xQueueReceive(transmissionQueue, &dataToSend, pdMS_TO_TICKS(2000))) {
+            sendOverWifiMqtt(dataToSend.applicationPrefix, dataToSend.value);
+          }
 
         delay(10);  // Small delay to prevent overloading the CPU
     }
@@ -115,15 +124,27 @@ void mqttReconnect() {
 }
 
 // Send data over MQTT
-void sendOverWifiMqtt(double val) {
+void sendOverWifiMqtt(String apPrefix, double val) {
     const int MSG_BUFFER_SIZE = 100;
     char msg[MSG_BUFFER_SIZE];
-
+    char topic[50];
+  
+    if (apPrefix == "AP") {
+      strcpy(topic, TOPIC_ANOMALY_POWER);
+    } else if (apPrefix == "AV") {
+      strcpy(topic, TOPIC_ANOMALY_VIBRATION);
+    } else if (apPrefix == "DS") {
+      strcpy(topic, TOPIC_DATASTREAM);
+    } else {
+      Serial.println("Unknown application prefix!");
+      return;
+    }
+  
     // Prepare the message to be sent
     snprintf(msg, MSG_BUFFER_SIZE, "%.2f", val);
-
+  
     Serial.printf("Publishing message: %.2f to topic %s\n", val, topic);
-
+  
     // Send the message via MQTT
     client.publish(topic, msg);
-}
+  }
