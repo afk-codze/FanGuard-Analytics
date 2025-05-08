@@ -1,79 +1,108 @@
 #include <Arduino.h>
-#include <arduinoFFT.h>
+#include <ArduinoFFT.h>
 #include <math.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "shared_defs.h"
-#include "fft-and-adaptive-sampling.h"
+#include "driver/uart.h"
+#include "esp_sleep.h"
+#include "esp_log.h"
+#include "esp_timer.h"
+#include <MPU6500_WE.h>
+#include <shared-defs.h>
 
-#define NOISE_THRESHOLD = 30.0;
-#define TEMP_SENSOR_PIN;
+// Number of baseline windows
+#define BASELINE_WINDOW_SIZE 10
+// Window size for data collection (number of samples)
+#define WINDOW_SIZE     10
+// Threshold multiplier for anomaly detection on each axis (adjust based on testing)
+#define ANOMALY_THRESHOLD_X 1.5
+#define ANOMALY_THRESHOLD_Y 1.5
+#define ANOMALY_THRESHOLD_Z 1.5
 
-int g_window_size = 0;
-float* window = nullptr;
+// Constants for FFT
+#define NOISE_THRESHOLD 5
+#define NYQUIST_MULTIPLIER 2.5f // Safety factor for Nyquist rate
+#define INIT_SAMPLE_RATE 1024 // Initial sampling rate (Hz)
+#define SECONDS_OF_AVG 5 // Number of seconds for rolling average
 
-// Track cumulative stats for all samples
-float global_mean = 0.0f;
-float global_m2 = 0.0f; // Sum of squared differences
-uint32_t global_sample_count = 0;
+// FFT phase flags
+volatile RTC_DATA_ATTR bool fft_init_complete = false;
 
-/// @brief Real component buffer for FFT input
-float g_samples_real[NUM_SAMPLES] = {0};
+// Current system sampling frequency (Hz)
+RTC_DATA_ATTR int g_sampling_frequency = INIT_SAMPLE_RATE;
 
-/// @brief Imaginary component buffer for FFT input
-float g_samples_imag[NUM_SAMPLES] = {0};
+float samples_real[INIT_SAMPLE_RATE];
+float samples_imag[INIT_SAMPLE_RATE];
 
-/// @brief Current system sampling frequency (Hz)
-int g_sampling_frequency_temp = INIT_SAMPLE_RATE;
+RTC_DATA_ATTR float window_rms[3][WINDOW_SIZE];
+RTC_DATA_ATTR float baseline[3][BASELINE_WINDOW_SIZE];
+int g_window_size = WINDOW_SIZE; // Window size for RMS calculation
 
-/// @brief ArduionFFT instance configured with buffers
-ArduinoFFT<float> FFT = ArduinoFFT<float>(
-    g_samples_real, 
-    g_samples_imag, 
-    NUM_SAMPLES, 
-    g_sampling_frequency_temp
-);
+RTC_DATA_ATTR int index_rms = 0;
+RTC_DATA_ATTR float baseline_rms[3] = {0};
+RTC_DATA_ATTR bool baseline_established = false;
+RTC_DATA_ATTR int num_of_samples = 0;
 
-void send_avg_temp(float avg) {
+
+
+// ArduinoFFT instance configured with buffers
+ArduinoFFT<float> FFT = ArduinoFFT<float>(samples_real, samples_imag, INIT_SAMPLE_RATE, INIT_SAMPLE_RATE);
+
+void send_rms(float* avg) {
   // Send to queue
 }
-void send_temp_anomaly() {
+
+void send_anomaly() {
   // Trigger alert
 }
 
-bool anomaly_detection(unsigned long ts, float sample, float variance);
+void read_sample(float* x, float* y, float* z) {
+  xyzFloat values = myMPU6500.getGValues();
+  *x = values.x;
+  *y = values.y;
+  *z = values.z;
+}
 
-float calc_rolling_avg() {
-  float sum = 0;
-  for(int i=0; i<g_window_size; i++) {
-      sum += window[i];
+float calculateRMS(float* data, int size) {
+  float sumSquares = 0.0;
+  for (int i = 0; i < size; i++) {
+    sumSquares += data[i] * data[i];
   }
-  return sum / g_window_size;
+  return sqrt(sumSquares / size);
 }
 
-void add_to_window(float sample) {
-  static int index = 0;
-  window[index] = sample;
-  index = (index + 1) % g_window_size;
+void light_sleep(int duration) {
+  uart_wait_tx_idle_polling((uart_port_t)CONFIG_ESP_CONSOLE_UART_NUM);
+  esp_sleep_enable_timer_wakeup(1000*1000*duration);
+  esp_light_sleep_start();
 }
 
-void update_global_stats(float new_sample) {
-  global_sample_count++;
-  float delta = new_sample - global_mean;
-  global_mean += delta / global_sample_count;
-  float delta2 = new_sample - global_mean;
-  global_m2 += delta * delta2;
+void deep_sleep(int duration) {
+  uart_wait_tx_idle_polling((uart_port_t)CONFIG_ESP_CONSOLE_UART_NUM);
+  esp_sleep_enable_timer_wakeup(1000*1000*duration);
+  esp_deep_sleep_start();
 }
 
-float get_global_variance() {
-  if (global_sample_count < 2) return 0.0f;
-  return global_m2 / (global_sample_count - 1);
+bool anomaly_detection(unsigned long ts, float* rms_values) {
+  // Check if the sample is an anomaly based on the threshold and baseline
+  if (!baseline_established) return false;
+
+  if (rms_values[0] > (baseline_rms[0]) * ANOMALY_THRESHOLD_X ||
+      rms_values[1] > (baseline_rms[1]) * ANOMALY_THRESHOLD_Y ||
+      rms_values[2] > (baseline_rms[2]) * ANOMALY_THRESHOLD_Z) {
+      Serial.printf("[ANOMALY] Anomaly detected at %lu: x: %.2f, y: %.2f, z: %.2f\n", ts, rms_values[0], rms_values[1], rms_values[2]);
+      Serial.printf("[ANOMALY] Baseline: x: %.2f, y: %.2f, z: %.2f\n", baseline_rms[0], baseline_rms[1], baseline_rms[2]);
+      Serial.printf("[ANOMALY] Threshold: x: %.2f, y: %.2f, z: %.2f\n", baseline_rms[0] * ANOMALY_THRESHOLD_X, baseline_rms[1] * ANOMALY_THRESHOLD_Y, baseline_rms[2] * ANOMALY_THRESHOLD_Z);
+      return true;
+  }
+  return false;
 }
 
-void reset_global_stats() {
-  global_mean = 0.0f;
-  global_m2 = 0.0f;
-  global_sample_count = 0;
+void add_to_window(float sample[], float window[][WINDOW_SIZE], int size) {
+  window[0][index_rms] = sample[0];
+  window[1][index_rms] = sample[1];
+  window[2][index_rms] = sample[2];
+  index_rms = (index_rms + 1) % size;
 }
 
 /* FFT Processing Core ----------------------------------------------------- */
@@ -97,13 +126,13 @@ void fft_perform_analysis(void) {
  * @pre Requires prior call to fft_perform_analysis()
  */
 float fft_get_max_frequency(void) {
-  double maxFrequency = -1;
+  float maxFrequency = -1;
 
   // Loop through all bins (skip DC at i=0)
-  for (uint16_t i = 1; i < (NUM_SAMPLES >> 1); i++) {
+  for (uint16_t i = 1; i < (INIT_SAMPLE_RATE >> 1); i++) {
     // Check if the current bin is a local maximum and above the noise floor
-    if (g_samples_real[i] > g_samples_real[i-1] && g_samples_real[i] > g_samples_real[i+1] && g_samples_real[i] > NOISE_THRESHOLD) {
-      double currentFreq = (i * g_sampling_frequency_temp) / NUM_SAMPLES;
+    if (samples_real[i] > samples_real[i-1] && samples_real[i] > samples_real[i+1] && samples_real[i] > NOISE_THRESHOLD) {
+      float currentFreq = (i * g_sampling_frequency) / INIT_SAMPLE_RATE;
       // Update maxFrequency if this peak has a higher frequency
       if (currentFreq > maxFrequency) {
         maxFrequency = currentFreq;
@@ -113,19 +142,16 @@ float fft_get_max_frequency(void) {
   return maxFrequency;
 }
 
-void adjust_window_size(){
-  g_window_size = RATIO_SAMPLES_SECONDS * SECONDS_OF_AVG;
-  if (window) free(window);
-  window = (float*)calloc(g_window_size, sizeof(float));
-}
-
-void fft_sample_signal(int pin) {
+void fft_sample_signal() {
+  float sample[3] = {0,0,0};
   // Sample the signal for initial FFT analysis
-  for (int i = 0; i < NUM_SAMPLES; i++) {
-    g_samples_real[i] = analogRead(pin);
-    delay(1000 / g_sampling_frequency_temp);
+  for (int i = 0; i < INIT_SAMPLE_RATE; i++) {
+    read_sample(&sample[0], &sample[1], &sample[2]);
+    samples_real[i] = sample[0]+sample[1]+sample[2];
+    light_sleep((1000 / g_sampling_frequency));
   }
 }
+
 
 /* System Configuration ---------------------------------------------------- */
 /**
@@ -135,42 +161,47 @@ void fft_sample_signal(int pin) {
  */
 void fft_adjust_sampling_rate(float max_freq) {
     int new_rate = (int)(NYQUIST_MULTIPLIER * max_freq);
-    g_sampling_frequency_temp = (g_sampling_frequency_temp > new_rate) ? new_rate : g_sampling_frequency_temp;
+    if (new_rate < 1) new_rate = INIT_SAMPLE_RATE / 2; // Fallback if no valid frequency detected
+    g_sampling_frequency = (g_sampling_frequency > new_rate) ? new_rate : g_sampling_frequency;
 }
 
 /**
- * @brief Initialize FFT processing module for water OR temp
+ * @brief Initialize FFT processing module
  * @details Performs:
  * 1. Initial signal acquisition
  * 2. Frequency analysis
  * 3. Adaptive rate configuration
  * @note Must be called before starting sampling tasks
  */
-void fft_init(int PIN) {
-    Serial.println("[FFT] Initializing FFT module");
-    
-    // Initial analysis with default signal
-    fft_sample_signal(PIN);
+void fft_init() {
+  Serial.println("[FFT] Initializing FFT module");
+  
+  if (!fft_init_complete) {
+
+    // Initial analysis with high frequency sampling
+    g_sampling_frequency = INIT_SAMPLE_RATE;
+    fft_sample_signal();
     
     fft_perform_analysis();
     
     // Adaptive rate adjustment
-    const float max_freq = fft_get_max_frequency();
+    float max_freq = fft_get_max_frequency();
 
-    if (max_freq > 0){ 
+    if (max_freq > 0) { 
       Serial.printf("[FFT] Max frequency: %.2f Hz\n", max_freq);
     } else {
       Serial.printf("[ERROR] No valid peaks detected\n");
-      vTaskDelete(NULL);
+      return; 
     }
 
     fft_adjust_sampling_rate(max_freq);
-    Serial.printf("[FFT] Optimal sampling rate: %d Hz\n", g_sampling_frequency_temp);
-    adjust_window_size(); // window size will change if the sampling frequency changes
-    Serial.printf("[FFT] New window size: %d Hz\n", g_window_size);
+    Serial.printf("[FFT] Optimal sampling rate: %d Hz\n", g_sampling_frequency);
+    
+    // Mark initialization as complete
+    fft_init_complete = true;
+    
+  } 
 }
-
-/*Se ho due segnali da campionare devo campionare con due f_opt diverse? devo avere due task per segnale?*/
 
 /**
  * @brief Main sampling task handler
@@ -179,45 +210,71 @@ void fft_init(int PIN) {
  * 
  * @warning Depends on initialized queue (xQueue_temp and xQueue_temp_avg)
  */
-void fft_sampling_temp_task(void *pvParameters) {
-  float temp_sample = 0.0f,avg = 0.0f,variance = 0.0f;
+void fft_sampling_task(void *pvParameters) {
+  float sample[3] = {0,0,0};
+  float rms_array[3] = {0,0,0};
+
   unsigned long time_stamp = 0;
-  int i=0;
-  fft_init(TEMP_SENSOR_PIN);
-  Serial.printf("[FFT] Starting sampling at %d Hz\n", g_sampling_frequency_temp);
+  
+  if(!fft_init_complete)
+    fft_init();
+  Serial.printf("[FFT] Starting sampling at %d Hz\n", g_sampling_frequency);
   Serial.println("--------------------------------");
 
-  while(1){
+  while(1) {
+    // Read sample from sensor
+    read_sample(&sample[0], &sample[1], &sample[2]);
+  
     
-    temp_sample = analogRead(TEMP_SENSOR_PIN) * 3.3f / 4095.0f;
-    
-    Serial.printf("[FFT] Sample temp %d: %.2f\n", i, temp_sample);
+    Serial.printf("[FFT] Sample %d = x: %.2f, y: %.2f, z: %.2f\n",num_of_samples, sample[0], sample[1], sample[2]);
 
-    
     time_stamp = millis();
     
-    add_to_window(temp_sample);
-    
-    variance = get_global_variance();
-    
-    if( (i+1) % (g_window_size) == 0){
-      avg = calc_rolling_avg();
-      send_avg_temp(avg);
-    }
-    i++;
-    printf ("[FFT] Variance: %.2f\n", variance);
-    printf ("[FFT] Rolling avg: %.2f\n", avg);
+    // Handle baseline establishment
+    if (!baseline_established) {
 
-    if(anomaly_detection(time_stamp,temp_sample,variance)) {
-      send_temp_anomaly();
-      Serial.printf("[ALERT] Anomaly detected! Restarting Nyquist phase...\n");
-      fft_init(TEMP_SENSOR_PIN);
-      Serial.printf("[FFT] Restarted sampling at %d Hz\n", g_sampling_frequency_temp);
-      
-      reset_global_stats();
-    }
-    update_global_stats(temp_sample);
+      if (num_of_samples < BASELINE_WINDOW_SIZE) {
+        baseline[0][num_of_samples] += sample[0];
+        baseline[1][num_of_samples] += sample[1];
+        baseline[2][num_of_samples] += sample[2];
+        
+        if (num_of_samples == (BASELINE_WINDOW_SIZE - 1)) {
+          baseline_established = true;
+          baseline_rms[0] = calculateRMS(baseline[0], BASELINE_WINDOW_SIZE);
+          baseline_rms[1] = calculateRMS(baseline[1], BASELINE_WINDOW_SIZE);
+          baseline_rms[2] = calculateRMS(baseline[2], BASELINE_WINDOW_SIZE);
+          
+          if (baseline_rms[0] < 0.1) baseline_rms[0] = 0.1; // Avoid zero multiplication
+          if (baseline_rms[1] < 0.1) baseline_rms[1] = 0.1; 
+          if (baseline_rms[2] < 0.1) baseline_rms[2] = 0.1; 
 
-    vTaskDelay(pdMS_TO_TICKS(1000/g_sampling_frequency_temp));
+          Serial.printf("[FFT] Baseline established rms: x: %.2f, y: %.2f, z: %.2f\n", baseline_rms[0], baseline_rms[1], baseline_rms[2]);
+          Serial.printf("[ANOMALY] Threshold: x: %.2f, y: %.2f, z: %.2f\n", baseline_rms[0] * ANOMALY_THRESHOLD_X, baseline_rms[1] * ANOMALY_THRESHOLD_Y, baseline_rms[2] * ANOMALY_THRESHOLD_Z);
+
+          num_of_samples = 0; // Reset sample count for next phase
+        }
+      }
+    } else {
+      // Add RMS values to the window
+      add_to_window(sample, window_rms, g_window_size);
+
+      // Send RMS values periodically
+      if ((num_of_samples % g_window_size) == 0) {
+        rms_array[0] = calculateRMS(window_rms[0], g_window_size);
+        rms_array[1] = calculateRMS(window_rms[1], g_window_size);
+        rms_array[2] = calculateRMS(window_rms[2], g_window_size);
+        send_rms(rms_array);
+        // Print RMS values
+        Serial.printf("[FFT] RMS: x:%.2f y:%.2f z:%.2f\n", rms_array[0], rms_array[1], rms_array[2]);
+         // Check for anomalies
+        if (anomaly_detection(time_stamp, rms_array)) {
+          send_anomaly();
+          Serial.printf("[ALERT] Anomaly detected! \n");
+          // Consider whether to reset or continue
+        }
+      }
+    }   
+    num_of_samples++;
+    deep_sleep(1000/g_sampling_frequency);
   }
 }
