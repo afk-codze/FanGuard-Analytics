@@ -10,10 +10,9 @@
 
 MPU6500_WE myMPU6500(MPU6500_ADDR);
 
-// RTC variables are implicitly volatile
 RTC_DATA_ATTR bool initialized = false;
 
-// Store components separately to avoid struct copy issues
+//Saving the accelerometer's calibration settings across deep sleep
 RTC_DATA_ATTR float acc_off_x = 0.0;
 RTC_DATA_ATTR float acc_off_y = 0.0;
 RTC_DATA_ATTR float acc_off_z = 0.0;
