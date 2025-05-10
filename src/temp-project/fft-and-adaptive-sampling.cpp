@@ -1,59 +1,54 @@
-#include <Arduino.h>
-#include <ArduinoFFT.h>
-#include <math.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "driver/uart.h"
-#include "esp_sleep.h"
-#include "esp_log.h"
-#include "esp_timer.h"
-#include <MPU6500_WE.h>
-#include <shared-defs.h>
+#include <a1_inferencing.h>
 
-// Number of baseline windows
-#define BASELINE_WINDOW_SIZE 10
-// Window size for data collection (number of samples)
-#define WINDOW_SIZE     10
-// Threshold multiplier for anomaly detection on each axis (adjust based on testing)
-#define ANOMALY_THRESHOLD_X 1.5
-#define ANOMALY_THRESHOLD_Y 1.5
-#define ANOMALY_THRESHOLD_Z 1.5
+#include "fft-and-adaptive-sampling.h"
 
-// Constants for FFT
-#define NOISE_THRESHOLD 5
-#define NYQUIST_MULTIPLIER 2.5f // Safety factor for Nyquist rate
-#define INIT_SAMPLE_RATE 1024 // Initial sampling rate (Hz)
-#define SECONDS_OF_AVG 5 // Number of seconds for rolling average
+// Anomaly flags
+RTC_DATA_ATTR bool anomaly_detected = false;
+RTC_DATA_ATTR bool anomaly_sent = false;
+RTC_DATA_ATTR anomaly_data_t anomaly;
 
-// FFT phase flags
+// FFT initialization phase flag
 volatile RTC_DATA_ATTR bool fft_init_complete = false;
 
 // Current system sampling frequency (Hz)
 RTC_DATA_ATTR int g_sampling_frequency = INIT_SAMPLE_RATE;
 
+// FFT samples
 float samples_real[INIT_SAMPLE_RATE];
 float samples_imag[INIT_SAMPLE_RATE];
 
+// window of RMS
 RTC_DATA_ATTR float window_rms[3][WINDOW_SIZE];
-RTC_DATA_ATTR float baseline[3][BASELINE_WINDOW_SIZE];
 int g_window_size = WINDOW_SIZE; // Window size for RMS calculation
 
 RTC_DATA_ATTR int index_rms = 0;
-RTC_DATA_ATTR float baseline_rms[3] = {0};
-RTC_DATA_ATTR bool baseline_established = false;
 RTC_DATA_ATTR int num_of_samples = 0;
-
-
 
 // ArduinoFFT instance configured with buffers
 ArduinoFFT<float> FFT = ArduinoFFT<float>(samples_real, samples_imag, INIT_SAMPLE_RATE, INIT_SAMPLE_RATE);
+
+float features[3] = {0};
 
 void send_rms(float* avg) {
   // Send to queue
 }
 
-void send_anomaly() {
+void send_anomaly(unsigned long ts, float* rms_values) {
   // Trigger alert
+  Serial.print("************* ANOMALY ************\n");
+  Serial.printf("************* ts: %ul - rms: x = %.2f, y = %.2f, z = %.2f ************\n",ts,rms_values[0],rms_values[1],rms_values[2]);
+}
+
+void send_anomaly_task(void *pvParameters){
+  if(anomaly_detected && !anomaly_sent){
+    send_anomaly(anomaly.time_stamp, anomaly.rms_array);
+    anomaly_sent = true;
+  }else{
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+    send_anomaly(anomaly.time_stamp, anomaly.rms_array);
+    anomaly_sent = true;
+  }
+  vTaskDelete(NULL);
 }
 
 void read_sample(float* x, float* y, float* z) {
@@ -83,20 +78,50 @@ void deep_sleep(int duration) {
   esp_deep_sleep_start();
 }
 
-bool anomaly_detection(unsigned long ts, float* rms_values) {
-  // Check if the sample is an anomaly based on the threshold and baseline
-  if (!baseline_established) return false;
-
-  if (rms_values[0] > (baseline_rms[0]) * ANOMALY_THRESHOLD_X ||
-      rms_values[1] > (baseline_rms[1]) * ANOMALY_THRESHOLD_Y ||
-      rms_values[2] > (baseline_rms[2]) * ANOMALY_THRESHOLD_Z) {
-      Serial.printf("[ANOMALY] Anomaly detected at %lu: x: %.2f, y: %.2f, z: %.2f\n", ts, rms_values[0], rms_values[1], rms_values[2]);
-      Serial.printf("[ANOMALY] Baseline: x: %.2f, y: %.2f, z: %.2f\n", baseline_rms[0], baseline_rms[1], baseline_rms[2]);
-      Serial.printf("[ANOMALY] Threshold: x: %.2f, y: %.2f, z: %.2f\n", baseline_rms[0] * ANOMALY_THRESHOLD_X, baseline_rms[1] * ANOMALY_THRESHOLD_Y, baseline_rms[2] * ANOMALY_THRESHOLD_Z);
-      return true;
+int raw_feature_get_data(size_t offset, size_t length, float *out_ptr) {
+  for (size_t i = 0; i < length; i++) {
+    out_ptr[i] = features[offset + i];
   }
+  return 0;
+}
+
+bool anomaly_detection(float rms_x,float rms_y,float rms_z) {
+  Serial.printf("[MODEL] RMS values for model input - X: %.3f, Y: %.3f, Z: %.3f\n", rms_x, rms_y, rms_z);
+  
+   // ----- Update Global Features Array -----
+  features[0] = rms_x;
+  features[1] = rms_y;
+  features[2] = rms_z;
+
+  // ----- Prepare the Signal Object for Inference -----
+  // Following the documentation, the features are provided via a signal_t structure.
+  signal_t features_signal;
+  features_signal.total_length = 3;
+  features_signal.get_data = &raw_feature_get_data;
+
+  ei_impulse_result_t result = {0};
+  
+  // Run the classifier
+  EI_IMPULSE_ERROR res = run_classifier(&features_signal,&result, false);
+
+  ei_printf("Predictions:\r\n");
+  for (uint16_t i = 0; i < EI_CLASSIFIER_LABEL_COUNT; i++) {
+    ei_printf("  %s: ", ei_classifier_inferencing_categories[i]);
+    ei_printf("%.5f\r\n", result.classification[i].value);
+  }
+
+  if (res != EI_IMPULSE_OK) {
+    ei_printf("[ERROR] Failed to run Edge Impulse classifier");
+    return false;
+  }
+  
+  if (result.classification[0].value > 0.5) {
+    return true;
+  }
+  
   return false;
 }
+
 
 void add_to_window(float sample[], float window[][WINDOW_SIZE], int size) {
   window[0][index_rms] = sample[0];
@@ -148,7 +173,7 @@ void fft_sample_signal() {
   for (int i = 0; i < INIT_SAMPLE_RATE; i++) {
     read_sample(&sample[0], &sample[1], &sample[2]);
     samples_real[i] = sample[0]+sample[1]+sample[2];
-    light_sleep((1000 / g_sampling_frequency));
+    light_sleep(1000 / g_sampling_frequency);
   }
 }
 
@@ -184,22 +209,22 @@ void fft_init() {
     
     fft_perform_analysis();
     
-    // Adaptive rate adjustment
     float max_freq = fft_get_max_frequency();
 
     if (max_freq > 0) { 
       Serial.printf("[FFT] Max frequency: %.2f Hz\n", max_freq);
     } else {
+      //this might happen if the fan is turned off
       Serial.printf("[ERROR] No valid peaks detected\n");
       return; 
     }
 
+    // Adaptive rate adjustment
     fft_adjust_sampling_rate(max_freq);
     Serial.printf("[FFT] Optimal sampling rate: %d Hz\n", g_sampling_frequency);
     
-    // Mark initialization as complete
+    // Mark fft initialization as complete
     fft_init_complete = true;
-    
   } 
 }
 
@@ -230,51 +255,29 @@ void fft_sampling_task(void *pvParameters) {
 
     time_stamp = millis();
     
-    // Handle baseline establishment
-    if (!baseline_established) {
+    add_to_window(sample, window_rms, g_window_size);
 
-      if (num_of_samples < BASELINE_WINDOW_SIZE) {
-        baseline[0][num_of_samples] += sample[0];
-        baseline[1][num_of_samples] += sample[1];
-        baseline[2][num_of_samples] += sample[2];
+    // Send RMS values periodically
+    if ((num_of_samples % g_window_size) == 0) {
+      rms_array[0] = calculateRMS(window_rms[0], g_window_size);
+      rms_array[1] = calculateRMS(window_rms[1], g_window_size);
+      rms_array[2] = calculateRMS(window_rms[2], g_window_size);
+      send_rms(rms_array);
+      // Print RMS values
+      Serial.printf("[FFT] RMS: x:%.2f y:%.2f z:%.2f\n", rms_array[0], rms_array[1], rms_array[2]);
+      
+      // Check for anomalies
+      if (anomaly_detection(rms_array[0],rms_array[1],rms_array[2])) {
+        anomaly_detected = true;
+        anomaly.time_stamp = time_stamp;
+        anomaly.rms_array = rms_array;
         
-        if (num_of_samples == (BASELINE_WINDOW_SIZE - 1)) {
-          baseline_established = true;
-          baseline_rms[0] = calculateRMS(baseline[0], BASELINE_WINDOW_SIZE);
-          baseline_rms[1] = calculateRMS(baseline[1], BASELINE_WINDOW_SIZE);
-          baseline_rms[2] = calculateRMS(baseline[2], BASELINE_WINDOW_SIZE);
-          
-          if (baseline_rms[0] < 0.1) baseline_rms[0] = 0.1; // Avoid zero multiplication
-          if (baseline_rms[1] < 0.1) baseline_rms[1] = 0.1; 
-          if (baseline_rms[2] < 0.1) baseline_rms[2] = 0.1; 
-
-          Serial.printf("[FFT] Baseline established rms: x: %.2f, y: %.2f, z: %.2f\n", baseline_rms[0], baseline_rms[1], baseline_rms[2]);
-          Serial.printf("[ANOMALY] Threshold: x: %.2f, y: %.2f, z: %.2f\n", baseline_rms[0] * ANOMALY_THRESHOLD_X, baseline_rms[1] * ANOMALY_THRESHOLD_Y, baseline_rms[2] * ANOMALY_THRESHOLD_Z);
-
-          num_of_samples = 0; // Reset sample count for next phase
-        }
-      }
-    } else {
-      // Add RMS values to the window
-      add_to_window(sample, window_rms, g_window_size);
-
-      // Send RMS values periodically
-      if ((num_of_samples % g_window_size) == 0) {
-        rms_array[0] = calculateRMS(window_rms[0], g_window_size);
-        rms_array[1] = calculateRMS(window_rms[1], g_window_size);
-        rms_array[2] = calculateRMS(window_rms[2], g_window_size);
-        send_rms(rms_array);
-        // Print RMS values
-        Serial.printf("[FFT] RMS: x:%.2f y:%.2f z:%.2f\n", rms_array[0], rms_array[1], rms_array[2]);
-         // Check for anomalies
-        if (anomaly_detection(time_stamp, rms_array)) {
-          send_anomaly();
-          Serial.printf("[ALERT] Anomaly detected! \n");
-          // Consider whether to reset or continue
-        }
+        // notify anomaly task
+        xTaskNotifyGive((TaskHandle_t)pvParameters);
       }
     }   
     num_of_samples++;
     deep_sleep(1000/g_sampling_frequency);
   }
+  vTaskDelete(NULL);
 }
