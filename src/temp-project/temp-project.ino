@@ -7,6 +7,7 @@
 #include <MPU6500_WE.h>
 #include <Wire.h>
 #include "shared-defs.h"
+#define BUZZER_PIN 23
 
 MPU6500_WE myMPU6500(MPU6500_ADDR);
 
@@ -22,10 +23,19 @@ RTC_DATA_ATTR float gyr_off_z = 0.0;
 
 TaskHandle_t send_anomaly_task_handler  = NULL;
 
+void buzzer_anomaly_task(void *args){
+  if(anomaly_detected){
+    while(1){
+      digitalWrite(BUZZER_PIN, HIGH);
+    }
+  }
+  vTaskDelete(NULL);
+}
+
 void setup() {
   Serial.begin(115200);
   Wire.begin();
-  
+  pinMode(BUZZER_PIN,OUTPUT);
   if(!myMPU6500.init()){
     Serial.println("MPU6500 does not respond");
   }
@@ -86,6 +96,7 @@ void setup() {
   myMPU6500.setAccDLPF(MPU9250_DLPF_6);
 
   xTaskCreate(send_anomaly_task, "send_anomaly_task", 4096, NULL, 1, &send_anomaly_task_handler);
+  xTaskCreate(buzzer_anomaly_task, "buzzer_anomaly_task", 4096, NULL, 1, NULL);
   xTaskCreate(fft_sampling_task, "fft_sampling_task", 4096, send_anomaly_task_handler, 1, NULL);
 }
 
