@@ -1,11 +1,11 @@
 package com.sapienza.subscription;
 
-import com.sapienza.model.Datastream;
-import com.sapienza.model.PowerAnomaly;
-import com.sapienza.model.VibrationAnomaly;
-import com.sapienza.repository.DatastreamRepository;
-import com.sapienza.repository.PowerAnomalyRepository;
-import com.sapienza.repository.VibrationAnomalyRepository;
+import com.sapienza.model.Power;
+import com.sapienza.model.RMS;
+import com.sapienza.model.Anomaly;
+import com.sapienza.repository.PowerRepository;
+import com.sapienza.repository.RmsRepository;
+import com.sapienza.repository.AnomalyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,13 +13,12 @@ import org.springframework.stereotype.Service;
 public class SubscriptionHandler {
 
     @Autowired
-    DatastreamRepository datastreamRepository;
+    RmsRepository rmsRepository;
 
     @Autowired
-    VibrationAnomalyRepository vibrationAnomalyRepository;
-
+    AnomalyRepository anomalyRepository;
     @Autowired
-    PowerAnomalyRepository powerAnomalyRepository;
+    private PowerRepository powerRepository;
 
     // When receiving data on anomalies topic send an alert on the dashboard
     private void alert(String topic, String message) {
@@ -28,24 +27,32 @@ public class SubscriptionHandler {
 
     //When receiving data on the datastream, set the timestamp and store it in the database
     public void store(String topic, String message) {
-        switch (topic) {
-            case "datastream":
-                System.out.println("Received: " + message + "on topic: datastream");
-                datastreamRepository.save(new Datastream(Double.valueOf(message)));
+        String[] parts = topic.split("/");
+        if (parts.length != 2) {
+            System.out.println("Invalid topic format: " + topic);
+            return;
+        }
+
+        Integer id = Integer.getInteger(parts[0]);
+        String subTopic = parts[1];
+
+        switch (subTopic) {
+            case "power":
+                powerRepository.save(new Power(id, Double.valueOf(message)));
+                System.out.println("Received: " + message + " on topic: power from device: " + id);
                 break;
-            case "anomalies/vibration":
-                vibrationAnomalyRepository.save(new VibrationAnomaly(Double.valueOf(message)));
-                System.out.println("Received: " + message + "on topic: anomalies/vibration");
+            case "RMS":
+                rmsRepository.save(new RMS(id, Double.valueOf(message)));
+                System.out.println("Received: " + message + " on topic: RMS from device: " + id);
                 break;
-            case "anomalies/power":
-                powerAnomalyRepository.save(new PowerAnomaly(Double.valueOf(message)));
-                System.out.println("Received: " + message + "on topic: anomalies/power");
+            case "anomalies":
+                anomalyRepository.save(new Anomaly(id, Double.valueOf(message)));
+                System.out.println("Received: " + message + " on topic: anomalies from device: " + id);
                 break;
             default:
                 System.out.println("Unknown topic: " + topic);
         }
-
-
     }
+
 
 }

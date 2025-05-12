@@ -6,34 +6,39 @@ import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "datastream")
-public class Datastream {
+@Table(name = "rms")
+public class RMS {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
+    @Column(name = "auto_id")
+    private Long auto_id;
 
-    @Column(name = "temperature")
-    private Double temperature;
+    @Column(name = "id")
+    private Integer id;
+
+    @Column(name = "rms")
+    private Double rms;
 
     @Column(name = "timestamp")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime timestamp;
 
-    public Datastream() {
+    public RMS() {
         this.timestamp = LocalDateTime.now();
     }
 
-    public Datastream(Double temperature) {
+    public RMS(Integer id ,Double rms) {
         this();
-        this.temperature = temperature;
+        this.id = id;
+        this.rms = rms;
     }
 
-    public Double getTemperature() {
-        return temperature;
+    public Double getRms() {
+        return rms;
     }
 
-    public void setTemperature(Double temperature) {
-        this.temperature = temperature;
+    public void setRms(Double rms) {
+        this.rms = rms;
     }
 
     public LocalDateTime getTimestamp() {
@@ -44,11 +49,19 @@ public class Datastream {
         this.timestamp = timestamp;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public Long getAuto_id() {
+        return auto_id;
     }
 
-    public Long getId() {
+    public void setAuto_id(Long auto_id) {
+        this.auto_id = auto_id;
+    }
+
+    public Integer getId() {
         return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
     }
 }

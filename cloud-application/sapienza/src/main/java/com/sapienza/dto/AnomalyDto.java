@@ -15,7 +15,7 @@ public class AnomalyDto {
     public static String POWER = "POWER";
     public static String VIBRATION = "VIBRATION";
 
-    public AnomalyDto() {
+    public AnomalyDto(Integer id, Double anomalyValue, LocalDateTime timestamp, String POWER) {
     }
 
     public AnomalyDto(Long id, Double value_spike, LocalDateTime timestamp, String type) {

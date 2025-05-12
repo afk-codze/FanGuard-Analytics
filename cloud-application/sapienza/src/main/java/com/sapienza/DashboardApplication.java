@@ -51,7 +51,7 @@ public class DashboardApplication {
 
         MqttPahoMessageDrivenChannelAdapter adapter =
                 new MqttPahoMessageDrivenChannelAdapter("tcp://localhost:1883", "testClient", mqttClientFactory(),
-                        "datastream", "anomalies/power", "anomalies/vibration");
+                        "+/RMS", "+/anomalies", "+/power");
         adapter.setCompletionTimeout(5000);
         adapter.setConverter(new DefaultPahoMessageConverter());
         adapter.setQos(1);
