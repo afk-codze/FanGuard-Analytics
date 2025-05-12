@@ -29,24 +29,26 @@ ArduinoFFT<float> FFT = ArduinoFFT<float>(samples_real, samples_imag, INIT_SAMPL
 
 float features[3] = {0};
 
-void send_rms(float* avg) {
+void send_rms(float* rms) {
+  float y_rms = rms[1];
   // Send to queue
+  if(xQueue_rms == NULL)
+    Serial.print("rms is NULL");
+  xQueueSend(xQueue_rms, &y_rms, 0);
 }
 
 void send_anomaly(unsigned long ts, float* rms_values) {
   // Trigger alert
+  
   Serial.print("************* ANOMALY ************\n");
   Serial.printf("************* ts: %ul - rms: x = %.2f, y = %.2f, z = %.2f ************\n",ts,rms_values[0],rms_values[1],rms_values[2]);
+  xTaskNotifyGive(fft_sampling_task_handle);
 }
 
 void send_anomaly_task(void *pvParameters){
   if(anomaly_detected && !anomaly_sent){
-    send_anomaly(anomaly.time_stamp, anomaly.rms_array);
     anomaly_sent = true;
-  }else{
-    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
     send_anomaly(anomaly.time_stamp, anomaly.rms_array);
-    anomaly_sent = true;
   }
   vTaskDelete(NULL);
 }
@@ -54,8 +56,8 @@ void send_anomaly_task(void *pvParameters){
 void read_sample(float* x, float* y, float* z) {
   xyzFloat values = myMPU6500.getGValues();
   *x = values.x;
-  *y = values.y;
-  *z = values.z;
+  *y = values.z;
+  *z = values.y;
 }
 
 float calculateRMS(float* data, int size) {
@@ -114,7 +116,7 @@ bool anomaly_detection(float rms_x,float rms_y,float rms_z) {
     ei_printf("[ERROR] Failed to run Edge Impulse classifier");
     return false;
   }
-  
+
   if (result.classification[0].value > 0.5) {
     return true;
   }
@@ -262,7 +264,7 @@ void fft_sampling_task(void *pvParameters) {
       rms_array[0] = calculateRMS(window_rms[0], g_window_size);
       rms_array[1] = calculateRMS(window_rms[1], g_window_size);
       rms_array[2] = calculateRMS(window_rms[2], g_window_size);
-      send_rms(rms_array);
+      send_rms(rms_array,timestamp);
       // Print RMS values
       Serial.printf("[FFT] RMS: x:%.2f y:%.2f z:%.2f\n", rms_array[0], rms_array[1], rms_array[2]);
       
@@ -272,10 +274,13 @@ void fft_sampling_task(void *pvParameters) {
         anomaly.time_stamp = time_stamp;
         anomaly.rms_array = rms_array;
         
-        // notify anomaly task
-        xTaskNotifyGive((TaskHandle_t)pvParameters);
+      // // notify anomaly task
+      // xTaskNotifyGive((TaskHandle_t)pvParameters);
       }
-    }   
+      // notify from rms_send_task
+      ulTaskNotifyTake(pdTRUE, portMAX_DELAY); // To be defined:  max delay
+    }
+
     num_of_samples++;
     deep_sleep(1000/g_sampling_frequency);
   }

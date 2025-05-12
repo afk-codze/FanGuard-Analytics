@@ -7,21 +7,30 @@
 #include <MPU6500_WE.h>
 #include <Wire.h>
 #include "shared-defs.h"
-#define BUZZER_PIN 23
+#include "communication.h"
 
+#define BUZZER_PIN 23
 MPU6500_WE myMPU6500(MPU6500_ADDR);
 
+// RTC variables are implicitly volatile
 RTC_DATA_ATTR bool initialized = false;
 
-//Saving the accelerometer's calibration settings across deep sleep
+// Store components separately to avoid struct copy issues
 RTC_DATA_ATTR float acc_off_x = 0.0;
 RTC_DATA_ATTR float acc_off_y = 0.0;
 RTC_DATA_ATTR float acc_off_z = 0.0;
-RTC_DATA_ATTR float gyr_off_x = 0.0;
-RTC_DATA_ATTR float gyr_off_y = 0.0;
-RTC_DATA_ATTR float gyr_off_z = 0.0;
 
 TaskHandle_t send_anomaly_task_handler  = NULL;
+
+void comunication_task(void *pvParameters) {
+  xCommunicationTaskHandle = xTaskGetCurrentTaskHandle();
+
+  // Start WiFi connection
+  wifi_init();
+
+  vTaskDelete(NULL);
+}
+
 
 void buzzer_anomaly_task(void *args){
   if(anomaly_detected){
@@ -43,6 +52,9 @@ void setup() {
     Serial.println("MPU6500 is connected");
   }
   
+  // Queues initialization
+  init_shared_queues();
+
   if(!initialized){
     Serial.println("MPU6500 - calibrating...");
     delay(1000);
@@ -50,19 +62,13 @@ void setup() {
     
     // Get offsets as regular xyzFloat
     xyzFloat accOffsets = myMPU6500.getAccOffsets();
-    xyzFloat gyrOffsets = myMPU6500.getGyrOffsets();
     
     // Store individual components to RTC memory
     acc_off_x = accOffsets.x;
     acc_off_y = accOffsets.y;
     acc_off_z = accOffsets.z;
     
-    gyr_off_x = gyrOffsets.x;
-    gyr_off_y = gyrOffsets.y;
-    gyr_off_z = gyrOffsets.z;
-    
     Serial.printf("acc_off: %.2f, %.2f, %.2f\n", acc_off_x, acc_off_y, acc_off_z);
-    Serial.printf("gyr_off: %.2f, %.2f, %.2f\n", gyr_off_x, gyr_off_y, gyr_off_z);
     
     initialized = true;
     Serial.println("Done!");
@@ -75,29 +81,20 @@ void setup() {
     accOffsets.y = acc_off_y;
     accOffsets.z = acc_off_z;
     
-    xyzFloat gyrOffsets;
-    gyrOffsets.x = gyr_off_x;
-    gyrOffsets.y = gyr_off_y;
-    gyrOffsets.z = gyr_off_z;
-    
     // Now set the offsets
     myMPU6500.setAccOffsets(accOffsets);
-    myMPU6500.setGyrOffsets(gyrOffsets);
     
     Serial.printf("acc_off: %.2f, %.2f, %.2f\n", acc_off_x, acc_off_y, acc_off_z);
-    Serial.printf("gyr_off: %.2f, %.2f, %.2f\n", gyr_off_x, gyr_off_y, gyr_off_z);
   }
 
-  myMPU6500.enableGyrDLPF();
-  myMPU6500.setGyrDLPF(MPU9250_DLPF_6);  // lowest noise
-  myMPU6500.setGyrRange(MPU9250_GYRO_RANGE_250); // highest resolution
   myMPU6500.setAccRange(MPU9250_ACC_RANGE_2G);
   myMPU6500.enableAccDLPF(true);
   myMPU6500.setAccDLPF(MPU9250_DLPF_6);
 
-  xTaskCreate(send_anomaly_task, "send_anomaly_task", 4096, NULL, 1, &send_anomaly_task_handler);
-  xTaskCreate(buzzer_anomaly_task, "buzzer_anomaly_task", 4096, NULL, 1, NULL);
-  xTaskCreate(fft_sampling_task, "fft_sampling_task", 4096, send_anomaly_task_handler, 1, NULL);
+  xTaskCreatePinnedToCore(comunication_task, "comunication_task", 4096, xTaskGetCurrentTaskHandle(), 2, NULL,1);
+  xTaskCreatePinnedToCore(send_anomaly_task, "send_anomaly_task", 4096, NULL, 1, &send_anomaly_task_handler,1);
+  //xTaskCreatePinnedToCore(buzzer_anomaly_task, "buzzer_anomaly_task", 4096, NULL, 1, NULL,1);
+  xTaskCreatePinnedToCore(fft_sampling_task, "fft_sampling_task", 4096, send_anomaly_task_handler, 1, &fft_sampling_task_handle,0);
 }
 
 void loop() {
