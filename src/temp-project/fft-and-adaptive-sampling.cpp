@@ -1,5 +1,5 @@
 #include <a1_inferencing.h>
-
+#include <Adafruit_Sensor.h>
 #include "fft-and-adaptive-sampling.h"
 
 // Anomaly flags
@@ -30,12 +30,18 @@ ArduinoFFT<float> FFT = ArduinoFFT<float>(samples_real, samples_imag, INIT_SAMPL
 float features[3] = {0};
 
 void send_rms(float* rms) {
-  float y_rms = rms[1];
-  // Send to queue
-  if(xQueue_rms == NULL)
-    Serial.print("rms is NULL");
-  xQueueSend(xQueue_rms, &y_rms, 0);
+    float y_rms = rms[1];
+    if (xQueue_rms == NULL) {
+        Serial.println("[QUEUE] handle is NULL!");
+        return;
+    }
+
+    BaseType_t ok = xQueueSend(xQueue_rms, &y_rms, 0);
+    if (ok != pdTRUE) {
+        Serial.println("[QUEUE] send failed (queue full?)");
+    }
 }
+
 
 void send_anomaly(unsigned long ts, float* rms_values) {
   // Trigger alert
@@ -54,10 +60,12 @@ void send_anomaly_task(void *pvParameters){
 }
 
 void read_sample(float* x, float* y, float* z) {
-  xyzFloat values = myMPU6500.getGValues();
-  *x = values.x;
-  *y = values.z;
-  *z = values.y;
+  sensors_event_t event;
+  accel.getEvent(&event);
+  // Convert m/s² → g (1 g = 9.80665 m/s²)
+  *x = event.acceleration.x / 9.80665;
+  *y = event.acceleration.y / 9.80665;
+  *z = event.acceleration.z / 9.80665;
 }
 
 float calculateRMS(float* data, int size) {
@@ -246,7 +254,6 @@ void fft_sampling_task(void *pvParameters) {
   if(!fft_init_complete)
     fft_init();
   Serial.printf("[FFT] Starting sampling at %d Hz\n", g_sampling_frequency);
-  Serial.println("--------------------------------");
 
   while(1) {
     // Read sample from sensor
@@ -264,7 +271,7 @@ void fft_sampling_task(void *pvParameters) {
       rms_array[0] = calculateRMS(window_rms[0], g_window_size);
       rms_array[1] = calculateRMS(window_rms[1], g_window_size);
       rms_array[2] = calculateRMS(window_rms[2], g_window_size);
-      send_rms(rms_array,timestamp);
+      send_rms(rms_array);
       // Print RMS values
       Serial.printf("[FFT] RMS: x:%.2f y:%.2f z:%.2f\n", rms_array[0], rms_array[1], rms_array[2]);
       
@@ -279,10 +286,10 @@ void fft_sampling_task(void *pvParameters) {
       }
       // notify from rms_send_task
       ulTaskNotifyTake(pdTRUE, portMAX_DELAY); // To be defined:  max delay
-    }
+    }    
 
     num_of_samples++;
-    deep_sleep(1000/g_sampling_frequency);
+    light_sleep(1000 / g_sampling_frequency); // TODO: should be deep sleep, not working probably for public mqtt broker latency
   }
   vTaskDelete(NULL);
 }

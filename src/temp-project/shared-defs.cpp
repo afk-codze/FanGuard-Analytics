@@ -12,6 +12,8 @@ void init_shared_queues() {
     if(xQueue_rms ==  NULL) {
         Serial.println("Queue creation failed!");
         while(1); // Halt on critical failure
+    }else{
+      Serial.println("[COMMUNICATION] shared queue succesfully created!");
     }
     
 }

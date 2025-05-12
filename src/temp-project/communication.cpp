@@ -36,7 +36,7 @@ RTC_DATA_ATTR bool mqtt_established = false;
  * @note Implements retry logic with status monitoring
  */
 void wifi_init(){
-  Serial.printf("\n[WiFi] Connecting to %s\n", WIFI_SSID);
+  Serial.printf("[WiFi] Connecting to %s\n", WIFI_SSID);
   WiFi.mode(WIFI_STA); // Set station mode
   
   // Disable power saving for faster connections (uses more power)
@@ -144,7 +144,7 @@ void send_to_mqtt(float val){
 
   if(client.publish(PUBLISH_TOPIC, msg)){
     Serial.printf("[MQTT] Publishing rms: %s\n", msg);
-    client.disconnect();
+    client.loop();                       // keep session healthy
     xTaskNotifyGive(fft_sampling_task_handle);
   }else{
     Serial.printf("[MQTT] ERROR while publishing rms: %s\n", msg);
