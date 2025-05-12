@@ -66,7 +66,7 @@ void wifi_init(){
         return;
 
       default:
-        Serial.printf("[WiFi] WiFi Status: %d\n", WiFi.status());
+        //Serial.printf("[WiFi] WiFi Status: %d\n", WiFi.status());
         break;
     }
     vTaskDelay(1);

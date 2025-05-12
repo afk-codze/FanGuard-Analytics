@@ -4,21 +4,18 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "fft-and-adaptive-sampling.h"
-#include <MPU6500_WE.h>
+#include <Adafruit_ADXL345_U.h>
 #include <Wire.h>
 #include "shared-defs.h"
 #include "communication.h"
 
 #define BUZZER_PIN 23
-MPU6500_WE myMPU6500(MPU6500_ADDR);
+
 
 // RTC variables are implicitly volatile
 RTC_DATA_ATTR bool initialized = false;
 
-// Store components separately to avoid struct copy issues
-RTC_DATA_ATTR float acc_off_x = 0.0;
-RTC_DATA_ATTR float acc_off_y = 0.0;
-RTC_DATA_ATTR float acc_off_z = 0.0;
+RTC_DATA_ATTR Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
 
 TaskHandle_t send_anomaly_task_handler  = NULL;
 
@@ -40,55 +37,26 @@ void buzzer_anomaly_task(void *args){
   vTaskDelete(NULL);
 }
 
-void setup() {
+void setup()
+{
   Serial.begin(115200);
-  Wire.begin();
-  pinMode(BUZZER_PIN,OUTPUT);
-  if(!myMPU6500.init()){
-    Serial.println("MPU6500 does not respond");
-  }
-  else{
-    Serial.println("MPU6500 is connected");
-  }
-  
-  // Queues initialization
+  Wire.begin(ADXL345_SDA, ADXL345_SCL);
+  pinMode(BUZZER_PIN, OUTPUT);
+
   init_shared_queues();
 
-  if(!initialized){
-    Serial.println("MPU6500 - calibrating...");
-    delay(1000);
-    myMPU6500.autoOffsets();
-    
-    // Get offsets as regular xyzFloat
-    xyzFloat accOffsets = myMPU6500.getAccOffsets();
-    
-    // Store individual components to RTC memory
-    acc_off_x = accOffsets.x;
-    acc_off_y = accOffsets.y;
-    acc_off_z = accOffsets.z;
-    
-    Serial.printf("acc_off: %.2f, %.2f, %.2f\n", acc_off_x, acc_off_y, acc_off_z);
-    
-    initialized = true;
-    Serial.println("Done!");
+  if (!accel.begin()) {
+    Serial.println("ADXL345 not found");
+    while (true)
+      delay(10);
   } else {
-    Serial.println("Using saved calibration values");
-    
-    // Create temporary xyzFloat objects
-    xyzFloat accOffsets;
-    accOffsets.x = acc_off_x;
-    accOffsets.y = acc_off_y;
-    accOffsets.z = acc_off_z;
-    
-    // Now set the offsets
-    myMPU6500.setAccOffsets(accOffsets);
-    
-    Serial.printf("acc_off: %.2f, %.2f, %.2f\n", acc_off_x, acc_off_y, acc_off_z);
+    Serial.println("ADXL345 connected");
   }
 
-  myMPU6500.setAccRange(MPU9250_ACC_RANGE_2G);
-  myMPU6500.enableAccDLPF(true);
-  myMPU6500.setAccDLPF(MPU9250_DLPF_6);
+  /* Sensor configuration (keep ±2 g, 100 Hz base rate; FFT oversamples) */
+  accel.setRange(ADXL345_RANGE_2_G);
+  accel.setDataRate(ADXL345_DATARATE_100_HZ);
+  
   
   if(this_reboot_send_rms){
     // this code will run only if we need to send a message to the mqtt server in this cycle

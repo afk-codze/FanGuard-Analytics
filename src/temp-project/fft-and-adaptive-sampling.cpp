@@ -1,5 +1,5 @@
 #include <a1_inferencing.h>
-
+#include <Adafruit_Sensor.h>
 #include "fft-and-adaptive-sampling.h"
 
 // Anomaly flags
@@ -47,11 +47,14 @@ void send_anomaly_task(void *pvParameters){
 }
 
 void read_sample(float* x, float* y, float* z) {
-  xyzFloat values = myMPU6500.getGValues();
-  *x = values.x;
-  *y = values.y;
-  *z = values.z;
+  sensors_event_t event;
+  accel.getEvent(&event);
+  // Convert m/s² → g (1 g = 9.80665 m/s²)
+  *x = event.acceleration.x / 9.80665;
+  *y = event.acceleration.y / 9.80665;
+  *z = event.acceleration.z / 9.80665;
 }
+
 
 float calculateRMS(float* data, int size) {
   float sumSquares = 0.0;
@@ -255,7 +258,7 @@ void fft_sampling_task(void *pvParameters) {
 
     // set flag this_reboot_send_rms = true if next reboot we send data to mqtt
     if(( (num_of_samples+1) % g_window_size) == 0)
-      this_reboot_send_rms = true;
+      this_reboot_send_rms = true; //enables mqtt task 
 
     // Send RMS values periodically
     if ((num_of_samples % g_window_size) == 0) {
@@ -275,7 +278,7 @@ void fft_sampling_task(void *pvParameters) {
         anomaly = data_to_send;
       }
 
-      send_data(data_to_send);
+      send_data(data_to_send);  
 
       // notify from rms_send_task
        // To be defined:  max delay
