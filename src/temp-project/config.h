@@ -3,8 +3,8 @@
 #define MSG_BUFFER_SIZE 50
 #define RETRY_DELAY 2000 / portTICK_PERIOD_MS
 #define MQTT_LOOP portTICK_PERIOD_MS
-#define PUBLISH_TOPIC "luca/esp32/data"
-#define SUBSCRIBE_TOPIC "luca/esp32/acks"
+#define DATASTREAM_RMS_TOPIC "luca/esp32/data"
+#define ANOMALY_RMS_TOPIC "luca/esp32/data"
 
 #define QUEUE_SIZE 10
 

@@ -5,7 +5,7 @@
 // Anomaly flags
 RTC_DATA_ATTR bool anomaly_detected = false;
 RTC_DATA_ATTR bool anomaly_sent = false;
-RTC_DATA_ATTR anomaly_data_t anomaly;
+RTC_DATA_ATTR data_to_send_t anomaly;
 
 // FFT initialization phase flag
 volatile RTC_DATA_ATTR bool fft_init_complete = false;
@@ -29,26 +29,19 @@ ArduinoFFT<float> FFT = ArduinoFFT<float>(samples_real, samples_imag, INIT_SAMPL
 
 float features[3] = {0};
 
-void send_rms(float* rms) {
-  float y_rms = rms[1];
+void send_data(data_to_send_t rms_data) {
   // Send to queue
-  if(xQueue_rms == NULL)
+  data_to_send_t temp = rms_data;
+  if(xQueue_data == NULL)
     Serial.print("rms is NULL");
-  xQueueSend(xQueue_rms, &y_rms, 0);
-}
-
-void send_anomaly(unsigned long ts, float* rms_values) {
-  // Trigger alert
-  
-  Serial.print("************* ANOMALY ************\n");
-  Serial.printf("************* ts: %ul - rms: x = %.2f, y = %.2f, z = %.2f ************\n",ts,rms_values[0],rms_values[1],rms_values[2]);
-  xTaskNotifyGive(fft_sampling_task_handle);
+  xQueueSend(xQueue_data, &rms_data, 0);
+  Serial.printf("send data with timestamp: %ul",rms_data.time_stamp);
 }
 
 void send_anomaly_task(void *pvParameters){
   if(anomaly_detected && !anomaly_sent){
+    send_data(anomaly);
     anomaly_sent = true;
-    send_anomaly(anomaly.time_stamp, anomaly.rms_array);
   }
   vTaskDelete(NULL);
 }
@@ -56,8 +49,8 @@ void send_anomaly_task(void *pvParameters){
 void read_sample(float* x, float* y, float* z) {
   xyzFloat values = myMPU6500.getGValues();
   *x = values.x;
-  *y = values.z;
-  *z = values.y;
+  *y = values.y;
+  *z = values.z;
 }
 
 float calculateRMS(float* data, int size) {
@@ -240,6 +233,7 @@ void fft_init() {
 void fft_sampling_task(void *pvParameters) {
   float sample[3] = {0,0,0};
   float rms_array[3] = {0,0,0};
+  data_to_send_t data_to_send;
 
   unsigned long time_stamp = 0;
   
@@ -259,26 +253,38 @@ void fft_sampling_task(void *pvParameters) {
     
     add_to_window(sample, window_rms, g_window_size);
 
+    // set flag this_reboot_send_rms = true if next reboot we send data to mqtt
+    if(( (num_of_samples+1) % g_window_size) == 0)
+      this_reboot_send_rms = true;
+
     // Send RMS values periodically
     if ((num_of_samples % g_window_size) == 0) {
       rms_array[0] = calculateRMS(window_rms[0], g_window_size);
       rms_array[1] = calculateRMS(window_rms[1], g_window_size);
       rms_array[2] = calculateRMS(window_rms[2], g_window_size);
-      send_rms(rms_array,timestamp);
+      data_to_send.rms_array = rms_array;
+      data_to_send.time_stamp = time_stamp;
+
       // Print RMS values
       Serial.printf("[FFT] RMS: x:%.2f y:%.2f z:%.2f\n", rms_array[0], rms_array[1], rms_array[2]);
       
       // Check for anomalies
       if (anomaly_detection(rms_array[0],rms_array[1],rms_array[2])) {
         anomaly_detected = true;
-        anomaly.time_stamp = time_stamp;
-        anomaly.rms_array = rms_array;
-        
-      // // notify anomaly task
-      // xTaskNotifyGive((TaskHandle_t)pvParameters);
+        data_to_send.anomaly = true;
+        anomaly = data_to_send;
       }
+
+      send_data(data_to_send);
+
       // notify from rms_send_task
-      ulTaskNotifyTake(pdTRUE, portMAX_DELAY); // To be defined:  max delay
+       // To be defined:  max delay
+      if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10000)) == 0) {
+        // Timeout occurred
+        Serial.println("[ERROR] Notification timeout - MQTT task not responding");
+      } else {
+        Serial.println("[FFT] Received notification from MQTT task");
+      }
     }
 
     num_of_samples++;

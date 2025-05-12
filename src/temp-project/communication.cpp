@@ -17,18 +17,14 @@
 #include <esp_wifi.h>
 #include <esp_wifi_types.h>
 // Network Configuration
-#define MSG_BUFFER_SIZE 50  // Maximum size for MQTT messages
+#define MSG_BUFFER_SIZE 128  // Maximum size for MQTT messages
 
 /* Global Variables --------------------------------------------------------- */
-float start_time = 0.0;      // Timestamp when communication starts (ms)
-float finish_time = 0.0;     // Timestamp when communication ends (ms)
 
 WiFiClient espClient;        // WiFi client instance
 PubSubClient client(espClient);  // MQTT client instance
 
 char msg[MSG_BUFFER_SIZE];   // Buffer for MQTT messages
-
-RTC_DATA_ATTR bool mqtt_established = false;
 
 /* WiFi Management ---------------------------------------------------------- */
 /**
@@ -37,19 +33,6 @@ RTC_DATA_ATTR bool mqtt_established = false;
  */
 void wifi_init(){
   Serial.printf("\n[WiFi] Connecting to %s\n", WIFI_SSID);
-  WiFi.mode(WIFI_STA); // Set station mode
-  
-  // Disable power saving for faster connections (uses more power)
-  esp_wifi_set_ps(WIFI_PS_NONE);
-  
-  // Configure static IP (much faster than DHCP)
-  //WiFi.config(staticIP, gateway, subnet, dns);
-  
-  // For faster reconnections, set these parameters:
-  // Lower min scan time - don't spend too long scanning
-  WiFi.scanNetworks(true, false, false, 150);
-
-
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   
   int numberOfTries = WIFI_MAX_RETRIES;
@@ -74,7 +57,7 @@ void wifi_init(){
         break;
 
       case WL_DISCONNECTED:    
-        //Serial.printf("[WiFi] WiFi is disconnected\n"); 
+        Serial.printf("[WiFi] WiFi is disconnected\n"); 
         break;
 
       case WL_CONNECTED:
@@ -83,7 +66,7 @@ void wifi_init(){
         return;
 
       default:
-        //Serial.printf("[WiFi] WiFi Status: %d\n", WiFi.status());
+        Serial.printf("[WiFi] WiFi Status: %d\n", WiFi.status());
         break;
     }
     vTaskDelay(1);
@@ -101,8 +84,7 @@ void connect_mqtt(void *pvParameters) {
   sprintf(clientId, "clientId-%ld", 1);
   Serial.printf("\n[MQTT] Connecting to %s\n", MQTT_SERVER);
   client.setServer(MQTT_SERVER, MQTT_PORT);
-  client.setSocketTimeout(60);
-  client.setKeepAlive(60);
+  
   while (!client.connect(clientId)) {
     Serial.printf(".");
     vTaskDelay(RETRY_DELAY);
@@ -115,43 +97,44 @@ void connect_mqtt(void *pvParameters) {
 
   Serial.printf("[MQTT] Connected\n");
 
-  Serial.printf("[MQTT] subscribe to topic: %s\n", SUBSCRIBE_TOPIC);
-  client.subscribe(SUBSCRIBE_TOPIC,1);
-  xTaskNotifyGive(xCommunicationTaskHandle);
-  mqtt_established = true;
   xTaskCreatePinnedToCore(communication_mqtt_task, "task_publish", 4096, NULL, 1, NULL,1);
-  client.loop();
-
+  
   // Main MQTT maintenance loop
-  // while (1) {
-  //   client.loop();
-  //   vTaskDelay(MQTT_LOOP);
-  // }
+  while (1) {
+    client.loop();
+    vTaskDelay(MQTT_LOOP);
+  }
 
   vTaskDelete(NULL); 
 }
   
 /**
  * @brief Publishes data to MQTT broker
- * @param val Value to publish
- * @param i Sample index
  */
-void send_to_mqtt(float val){
+void send_to_mqtt(data_to_send_t data_to_send){
+  if(data_to_send.anomaly)
+    snprintf(msg, MSG_BUFFER_SIZE, "{\"status\":\"ANOMALY\",\"x\":%.2f,\"y\":%.2f,\"z\":%.2f,\"time\":%lu}",data_to_send.rms_array[0],data_to_send.rms_array[1],data_to_send.rms_array[2], data_to_send.time_stamp);    
+  else
+    snprintf(msg, MSG_BUFFER_SIZE, "{\"x\":%.2f,\"y\":%.2f,\"z\":%.2f,\"time\":%lu}",data_to_send.rms_array[0],data_to_send.rms_array[1],data_to_send.rms_array[2], data_to_send.time_stamp);
 
-  unsigned long timestamp = millis();
-  snprintf(msg, MSG_BUFFER_SIZE, "{\"value\":%.2f,\"time\":%lu}",val, timestamp);    
-  Serial.printf("**** %s ****\n", msg);
+  Serial.printf("**** %s ****\n",msg);
 
-  if(client.publish(PUBLISH_TOPIC, msg)){
-    Serial.printf("[MQTT] Publishing rms: %s\n", msg);
-    client.disconnect();
-    xTaskNotifyGive(fft_sampling_task_handle);
+  if(!data_to_send.anomaly){
+    if(client.publish(DATASTREAM_RMS_TOPIC, msg))
+      Serial.printf("[MQTT] Publishing rms: %s\n", msg);
+
   }else{
-    Serial.printf("[MQTT] ERROR while publishing rms: %s\n", msg);
-    if (!client.connected()) {
-      vTaskDelete(NULL); 
+    if (client.publish(ANOMALY_RMS_TOPIC, msg)){
+      Serial.printf("[MQTT] Publishing anomaly: %s\n", msg);
+    }else{
+      Serial.printf("[MQTT] ERROR while publishing rms: %s\n", msg);
+      if (!client.connected()) 
+        vTaskDelete(NULL);
     }
   }
+
+  client.disconnect();
+  xTaskNotifyGive(fft_sampling_task_handle);
 }
 
 
@@ -162,11 +145,10 @@ void send_to_mqtt(float val){
  */
 void communication_mqtt_task(void *pvParameters){
     Serial.println("------ communication_mqtt_task ------");
-
-    float val = 0.0;
+    data_to_send_t rms_data;
     while(1){
-      if(xQueueReceive(xQueue_rms, &val, (TickType_t)portMAX_DELAY)) {
-        send_to_mqtt(val);
+      if(xQueueReceive(xQueue_data, &rms_data, (TickType_t)portMAX_DELAY)) {
+        send_to_mqtt(rms_data);
       }
     }
   vTaskDelete(NULL); 
