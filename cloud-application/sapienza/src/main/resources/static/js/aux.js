@@ -12,7 +12,11 @@ function Dataset(id, sys_data) {
     this.fill = false;
     this.tension = 0.1;
     this.showLine = true;
-    this.borderColor = `rgb(120, 16, 16)`;
+    if(id == "Power"){
+        this.borderColor = `rgb(54, 197, 4)`;
+    }else{
+        this.borderColor = `rgb(175, 9, 9)`;
+    }
 }
 
 
@@ -25,7 +29,7 @@ function handleChartCreationAndUpdate(chartName, db_data, realtime = false) {
     var chart = $('#'.concat(chartName));
     if (chart.hasClass("0")) {
 
-        chart_list.push(createChart(db_data, createDataset(db_data, realtime), chartName));
+        chart_list.push(createChart(db_data, createDataset(db_data, realtime,chartName), chartName));
         chart.attr("class", "1");
 
     } else {
@@ -33,7 +37,7 @@ function handleChartCreationAndUpdate(chartName, db_data, realtime = false) {
         chart_list.forEach(c => {
             if (c.canva_name === chartName) {
                 removeData(c.chart);
-                addData(c.chart, db_data.map(r => r.timestamp), createDataset(db_data, realtime));
+                addData(c.chart, db_data.map(r => r.timestamp), createDataset(db_data, realtime,chartName));
             }
         })
 
@@ -71,19 +75,30 @@ function createChart(sys_data, dataset, title) {
 /*
 * Crea un array pieno dei dati necessari al grafico
 * */
-function createDataset(db_data, realtime) {
+function createDataset(db_data, realtime, chartName) {
 
     var dataset = [];
     // var map = new Map();
 
 
     var axes_data = [];
-    db_data.forEach(obj => axes_data.push({x: obj.timestamp, y: obj.temperature}));
+
+
+    db_data.forEach(obj => {
+        var y_value = null;
+        if(chartName == "Power"){
+            y_value = obj.power;
+        }else{
+            y_value = obj.rms
+        }
+
+        axes_data.push({x: obj.timestamp, y: y_value})
+    });
 
     if(realtime){
         axes_data = timestampToElapsedTime(axes_data);
     }
-    dataset.push(new Dataset("Power", axes_data));
+    dataset.push(new Dataset(chartName, axes_data));
 
     return dataset;
 
@@ -129,11 +144,8 @@ function fillAnomaliesTable(data) {
         var anomalyDetails = "";
         var anomalyData = [];
         console.log(anomaly);
-        if (anomaly.type == "POWER") {
-            anomalyDetails = "Power Spike detected! : " + anomaly.value_spike.toString() + " mW ";
-        } else {
-            anomalyDetails = "Vibration Spike detected : " + anomaly.value_spike.toString() + " Hz ";
-        }
+
+        anomalyDetails = "Anomaly with value: " + anomaly.anomaly_value.toString() + " ";
 
         anomalyDetails = anomalyDetails + "detected at " + anomaly.timestamp;
         anomalyData.push(anomalyDetails);

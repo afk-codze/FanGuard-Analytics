@@ -10,11 +10,10 @@ import java.time.LocalDateTime;
 public class RMS {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "auto_id")
-    private Long auto_id;
+    private Long Id;
 
-    @Column(name = "id")
-    private Integer id;
+    @Column(name = "devId")
+    private String devId;
 
     @Column(name = "rms")
     private Double rms;
@@ -27,10 +26,26 @@ public class RMS {
         this.timestamp = LocalDateTime.now();
     }
 
-    public RMS(Integer id ,Double rms) {
+    public RMS(String Id ,Double rms) {
         this();
-        this.id = id;
+        this.devId = Id;
         this.rms = rms;
+    }
+
+    public Long getId() {
+        return Id;
+    }
+
+    public void setId(Long id) {
+        Id = id;
+    }
+
+    public String getDevId() {
+        return devId;
+    }
+
+    public void setDevId(String devId) {
+        this.devId = devId;
     }
 
     public Double getRms() {
@@ -47,21 +62,5 @@ public class RMS {
 
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
-    }
-
-    public Long getAuto_id() {
-        return auto_id;
-    }
-
-    public void setAuto_id(Long auto_id) {
-        this.auto_id = auto_id;
-    }
-
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
     }
 }

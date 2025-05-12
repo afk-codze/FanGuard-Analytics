@@ -13,8 +13,16 @@ $(document).ready(function () {
     $('#log_submit').submit(function (event) {
         event.preventDefault();
 
-        generateGraphs();
-        generateAnomaliesTable();
+        const selectedDeviceId = $('#deviceId').val(); // Get selected device ID
+
+        if (!selectedDeviceId) {
+            console.warn('No device ID selected');
+            return; // Optionally prevent the request if no ID is selected
+        }
+
+
+        generateGraphs(selectedDeviceId);
+        generateAnomaliesTable(selectedDeviceId);
     });
 
     anomaly_table = setAnomalyTable();
@@ -25,7 +33,7 @@ $(document).ready(function () {
 });
 
 //Generate the graph
-function generateGraphs() {
+function generateGraphs(id) {
     var start_timestamp = $('#start_time').val();
     var end_timestamp = $('#end_time').val();
 
@@ -35,13 +43,16 @@ function generateGraphs() {
         type: 'GET',
         data: {
             start: start_timestamp,
-            end: end_timestamp
+            end: end_timestamp,
+            deviceId : id
         },
         success: function (data) {
             // Assuming data is an array of objects
                 console.log(data);
             if (data.length !== 0) {
-                handleChartCreationAndUpdate("Power", data, false);
+                handleChartCreationAndUpdate("Power", data[0], false);
+                handleChartCreationAndUpdate("RMS", data[1], false);
+
             } else {
                 destroyCharts();
             }
@@ -54,7 +65,7 @@ function generateGraphs() {
 }
 
 //Generate the table
-function generateAnomaliesTable() {
+function generateAnomaliesTable(id) {
 
     var start_timestamp = $('#start_time').val();
     var end_timestamp = $('#end_time').val();
@@ -65,11 +76,13 @@ function generateAnomaliesTable() {
         url: '/api/anomalies/timeRange',
         type: 'GET',
         data: {
+            deviceId: id,
             start: start_timestamp,
             end: end_timestamp
         },
         success: function (data) {
             // Assuming data is an array of objects
+            console.log(data)
             if (data.length !== 0) {
                 fillAnomaliesTable(data) // fill anomalies table with last hour data (limit?)
                 disableAnimation();

@@ -8,11 +8,11 @@ while true; do
     value=$(printf "%.2f" "$value")
 
     # Publish to MQTT
-    mosquitto_pub -t "anomalies/power" -m "$value"
+    mosquitto_pub -t "dev1/anomalies" -m "$value"
 
-   mosquitto_pub -t "anomalies/vibration" -m "$value"
+    mosquitto_pub -t "dev1/power" -m "$value"
 
-       mosquitto_pub -t "datastream" -m "$value"
+    mosquitto_pub -t "dev1/RMS" -m "$value"
 
 
     # Wait 5 seconds

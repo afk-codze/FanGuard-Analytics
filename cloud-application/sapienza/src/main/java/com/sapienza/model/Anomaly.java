@@ -11,11 +11,10 @@ public class Anomaly {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "auto_id")
-    private Long auto_id;
+    private Long Id;
 
-    @Column(name = "id")
-    private Integer id;
+    @Column(name = "devId")
+    private String devId;
 
     @Column(name = "anomaly_value")
     private Double anomaly_value;
@@ -28,22 +27,26 @@ public class Anomaly {
         this.timestamp =LocalDateTime.now();
     }
 
-    public Anomaly(Integer id,Double anomaly_value) {
+    public Anomaly(String id,Double anomaly_value) {
         this();
-        this.id = id;
+        this.devId = id;
         this.anomaly_value = anomaly_value;
     }
 
-    public Long getAuto_id() {
-        return auto_id;
+    public Long getId() {
+        return Id;
     }
 
-    public void setAuto_id(Long auto_id) {
-        this.auto_id = auto_id;
+    public void setId(Long id) {
+        Id = id;
     }
 
-    public void setId(Integer id) {
-        this.id = id;
+    public String getDevId() {
+        return devId;
+    }
+
+    public void setDevId(String devId) {
+        this.devId = devId;
     }
 
     public Double getAnomaly_value() {
@@ -60,9 +63,5 @@ public class Anomaly {
 
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
-    }
-
-    public Integer getId() {
-        return id;
     }
 }

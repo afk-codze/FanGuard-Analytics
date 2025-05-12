@@ -14,14 +14,14 @@ public class RmsService {
     @Autowired
     RmsRepository rmsRepository;
 
-    public List<RMS> getAllRmsFromGivenTime(LocalDateTime fromTime) {
-        return rmsRepository.findByTimestampGreaterThanOrderByTimestampAsc(fromTime);
+    public List<RMS> getAllRmsFromGivenTimeAndDevice(LocalDateTime fromTime, String deviceId) {
+        return rmsRepository.findByTimestampAfterAndDevIdOrderByTimestampAsc(fromTime,deviceId);
     }
 
 
-    public List<RMS> getAllRmsInTimeRange(LocalDateTime start, LocalDateTime end) {
+    public List<RMS> getAllRmsInTimeRange(String deviceId, LocalDateTime start, LocalDateTime end) {
 
 
-        return rmsRepository.findByTimeRange(start,end);
+        return rmsRepository.findByTimeRange(deviceId,start,end);
     }
 }

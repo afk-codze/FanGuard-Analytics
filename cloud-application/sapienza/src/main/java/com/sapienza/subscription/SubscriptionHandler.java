@@ -33,9 +33,10 @@ public class SubscriptionHandler {
             return;
         }
 
-        Integer id = Integer.getInteger(parts[0]);
+        String id = parts[0];
         String subTopic = parts[1];
 
+        System.out.println(id + " " + subTopic + " " + message);
         switch (subTopic) {
             case "power":
                 powerRepository.save(new Power(id, Double.valueOf(message)));

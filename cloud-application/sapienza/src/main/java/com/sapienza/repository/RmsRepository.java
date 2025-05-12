@@ -12,12 +12,13 @@ import java.util.List;
 @Repository
 public interface RmsRepository extends JpaRepository<RMS, Long> {
 
-    List<RMS> findAllByOrderByTimestampAsc();  // Ascending order}
-    List<RMS> findByTimestampGreaterThanOrderByTimestampAsc(LocalDateTime timestamp);
+    List<RMS> findByTimestampAfterAndDevIdOrderByTimestampAsc(LocalDateTime timestamp, String devId);
 
 
     @Query("select d \n" +
             "from RMS d \n" +
-            "where d.timestamp between :start and :end order by timestamp asc")
-    List<RMS> findByTimeRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+            "where d.timestamp between :start and :end " +
+            "and d.devId = :devId " +
+            "order by timestamp asc")
+    List<RMS> findByTimeRange(@Param("devId") String devId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 }

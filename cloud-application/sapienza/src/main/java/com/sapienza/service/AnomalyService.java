@@ -1,6 +1,5 @@
 package com.sapienza.service;
 
-import com.sapienza.dto.AnomalyDto;
 import com.sapienza.model.Anomaly;
 import com.sapienza.repository.AnomalyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,48 +16,37 @@ public class AnomalyService {
     AnomalyRepository anomalyRepository;
 
     //merge and sort by date time
-    List<AnomalyDto> anomalies = new LinkedList<>();
+    List<Anomaly> anomalies = new LinkedList<>();
 
 
-    public List<AnomalyDto> getMostRecentAnomaliesRealtime(int maxAnomalies) {
+    public List<Anomaly> getMostRecentAnomaliesRealtime(String deviceId, int maxAnomalies) {
 
         //get last maxanomalies PowerAnomalies Objects
-        List<Anomaly> powerAnomalies = anomalyRepository.findTop10ByOrderByTimestampDesc();
+        List<Anomaly> powerAnomalies = anomalyRepository.findTop10ByDevIdOrderByTimestampDesc(deviceId);
 
 
-        encodeAnomalyDtoList(maxAnomalies, powerAnomalies);
+        return sortAnomalies(maxAnomalies, powerAnomalies);
 
-        System.out.println(anomalies.toString());
-
-        return anomalies;
     }
 
-    private void encodeAnomalyDtoList(int maxAnomalies, List<Anomaly> powerAnomalies) {
-
-        for (Anomaly anomaly : powerAnomalies) {
-            anomalies.add(new AnomalyDto(anomaly.getId(), anomaly.getAnomaly_value(), anomaly.getTimestamp(),AnomalyDto.POWER));
-        }
+    private List<Anomaly> sortAnomalies(int maxAnomalies, List<Anomaly> powerAnomalies) {
 
         // Sort all anomalies by timestamp descending
-        anomalies.sort((a1, a2) -> a2.getTimestamp().compareTo(a1.getTimestamp()));
+        powerAnomalies.sort((a1, a2) -> a2.getTimestamp().compareTo(a1.getTimestamp()));
 
         // Keep only top #maxAnomalies
-        if (anomalies.size() > maxAnomalies) {
-            anomalies = anomalies.subList(0, maxAnomalies);
+        if (powerAnomalies.size() > maxAnomalies) {
+            powerAnomalies = powerAnomalies.subList(0, maxAnomalies);
         }
+        return powerAnomalies;
     }
 
-    public List<AnomalyDto> getMostRecentAnomaliesTimeRange(int maxAnomalies, LocalDateTime start, LocalDateTime end) {
+    public List<Anomaly> getMostRecentAnomaliesTimeRange(String deviceId, int maxAnomalies, LocalDateTime start, LocalDateTime end) {
 
         //get last maxanomalies PowerAnomalies Objects
-        List<Anomaly> powerAnomalies = anomalyRepository.findTop10ByOrderByTimestampDesc();
+        List<Anomaly> powerAnomalies = anomalyRepository.findTop10ByTimeRangeDesc(deviceId, start, end);
 
-
-        encodeAnomalyDtoList(maxAnomalies, powerAnomalies);
-
-        System.out.println(anomalies.toString());
-
-        return anomalies;
+        return sortAnomalies(maxAnomalies, powerAnomalies);
 
     }
 }

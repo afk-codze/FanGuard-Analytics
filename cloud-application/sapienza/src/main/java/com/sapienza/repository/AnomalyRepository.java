@@ -11,11 +11,13 @@ import java.util.List;
 
 @Repository
 public interface AnomalyRepository extends JpaRepository<Anomaly, Long> {
-    List<Anomaly> findTop10ByOrderByTimestampDesc();
+
+    List<Anomaly> findTop10ByDevIdOrderByTimestampDesc(String devId);
 
     @Query("select w \n" +
             "from Anomaly w \n" +
             "where w.timestamp between :start and :end " +
+            "and w.devId = :devId "+
             "order by timestamp desc")
-    List<Anomaly> findTop10ByTimeRangeDesc(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    List<Anomaly> findTop10ByTimeRangeDesc(@Param("devId") String devId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 }

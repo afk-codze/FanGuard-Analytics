@@ -9,14 +9,20 @@ var anomaly_table;
 $(document).ready(function () {
     $('#realtime_submit').submit(function (event) {
         event.preventDefault();
+        const selectedDeviceId = $('#deviceId').val(); // Get selected device ID
+
+        if (!selectedDeviceId) {
+            console.warn('No device ID selected');
+            return; // Optionally prevent the request if no ID is selected
+        }
 
 
         clearInterval(interval_id);
-        generateGraphs();
-        generateAnomaliesTable();
+        generateGraphs(selectedDeviceId);
+        generateAnomaliesTable(selectedDeviceId);
         interval_id = setInterval(function() {
-            generateGraphs();  // Update graphs
-            generateAnomaliesTable();  // Update anomalies table
+            generateGraphs(selectedDeviceId);  // Update graphs
+            generateAnomaliesTable(selectedDeviceId);  // Update anomalies table
         }, 5000);
     });
 
@@ -25,23 +31,24 @@ $(document).ready(function () {
 
 });
 
-function generateGraphs() {
+function generateGraphs(selectedDeviceId) {
 
 
     $.ajax({
         url: '/api/datastream/realtime',
         type: 'GET',
         data: {
+            deviceId: selectedDeviceId // Send as query parameter
         },
         success: function (data) {
-            // Assuming data is an array of objects
+            console.log(data);
             if (data.length !== 0) {
-                handleChartCreationAndUpdate("Power", data, true);
+                handleChartCreationAndUpdate("Power", data[0], true);
+                handleChartCreationAndUpdate("RMS", data[1], true);
                 disableAnimation();
-            }else{
+            } else {
                 destroyCharts();
             }
-
         },
         error: function () {
             console.log('Error fetching data');
@@ -49,14 +56,16 @@ function generateGraphs() {
     });
 }
 
-function generateAnomaliesTable(){
+function generateAnomaliesTable(selectedDeviceId){
     $.ajax({
         url: '/api/anomalies/realtime',
         type: 'GET',
         data: {
+            deviceId: selectedDeviceId
         },
         success: function (data) {
             // Assuming data is an array of objects
+            console.log(data);
             if (data.length !== 0) {
                 fillAnomaliesTable(data) // fill anomalies table with last hour data (limit?)
                 disableAnimation();
