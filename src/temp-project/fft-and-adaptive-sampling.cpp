@@ -1,3 +1,4 @@
+#include <sys/_types.h>
 #include <a1_inferencing.h>
 
 #include "fft-and-adaptive-sampling.h"
@@ -5,7 +6,7 @@
 // Anomaly flags
 RTC_DATA_ATTR bool anomaly_detected = false;
 RTC_DATA_ATTR bool anomaly_sent = false;
-RTC_DATA_ATTR data_to_send_t anomaly;
+RTC_DATA_ATTR data_to_send_t anomaly = {};
 
 // FFT initialization phase flag
 volatile RTC_DATA_ATTR bool fft_init_complete = false;
@@ -27,7 +28,15 @@ RTC_DATA_ATTR int num_of_samples = 0;
 // ArduinoFFT instance configured with buffers
 ArduinoFFT<float> FFT = ArduinoFFT<float>(samples_real, samples_imag, INIT_SAMPLE_RATE, INIT_SAMPLE_RATE);
 
+// Custom timestamp
+RTC_DATA_ATTR unsigned long millisOffset = 0;
+
 float features[3] = {0};
+
+unsigned long offsetMillis()
+{
+    return millis() + millisOffset;
+}
 
 void send_data(data_to_send_t rms_data) {
   // Send to queue
@@ -248,8 +257,11 @@ void fft_sampling_task(void *pvParameters) {
   
     
     Serial.printf("[FFT] Sample %d = x: %.2f, y: %.2f, z: %.2f\n",num_of_samples, sample[0], sample[1], sample[2]);
+    
+    time_stamp = offsetMillis();
+    millisOffset = time_stamp;
 
-    time_stamp = millis();
+    Serial.printf("%ul",time_stamp);
     
     add_to_window(sample, window_rms, g_window_size);
 
