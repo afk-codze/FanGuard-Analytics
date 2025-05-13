@@ -61,6 +61,12 @@ void setup() {
   init_shared_queues();
 
   if(!initialized){
+
+    // Calc id device
+    for (int i = 0; i < 17; i = i + 8) {
+      id_device |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
+    }
+
     Serial.println("MPU6500 - calibrating...");
     delay(1000);
     myMPU6500.autoOffsets();

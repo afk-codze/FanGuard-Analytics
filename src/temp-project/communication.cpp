@@ -90,7 +90,7 @@ void wifi_init(){
 void connect_mqtt(void *pvParameters) {
   char clientId[50];
   long r = random(1000);
-  sprintf(clientId, "clientId-%ld", 1);
+  sprintf(clientId, "%d", id_device);
   Serial.printf("\n[MQTT] Connecting to %s\n", MQTT_SERVER);
   client.setServer(MQTT_SERVER, MQTT_PORT);
   
@@ -173,7 +173,7 @@ bool prepare_signed_json(data_to_send_t data_to_send, char* json_buffer, size_t 
  * @brief Publishes data to MQTT broker
  */
 void send_to_mqtt(data_to_send_t data_to_send){
-  
+
   Serial.printf("**** %s ****\n",msg);
   
   // Prepare signed JSON message
@@ -182,18 +182,14 @@ void send_to_mqtt(data_to_send_t data_to_send){
     return;
   }
 
-  if(!data_to_send.anomaly){
-    if(client.publish(DATASTREAM_RMS_TOPIC, msg))
-      Serial.printf("[MQTT] Publishing rms: %s\n", msg);
+  const char* topic = !data_to_send.anomaly ? (String(id_device) + "/" + DATASTREAM_RMS_TOPIC).c_str() : (String(id_device) + "/" + ANOMALY_RMS_TOPIC).c_str();
 
+  if (client.publish(topic, msg)){
+    Serial.printf("[MQTT] Publishing: %s\n", msg);
   }else{
-    if (client.publish(ANOMALY_RMS_TOPIC, msg)){
-      Serial.printf("[MQTT] Publishing anomaly: %s\n", msg);
-    }else{
-      Serial.printf("[MQTT] ERROR while publishing rms: %s\n", msg);
-      if (!client.connected()) 
-        vTaskDelete(NULL);
-    }
+    Serial.printf("[MQTT] ERROR while publishing rms: %s\n", msg);
+    if (!client.connected()) 
+      vTaskDelete(NULL);
   }
 
   client.disconnect();

@@ -17,6 +17,7 @@ extern TaskHandle_t fft_sampling_task_handle;
 
 extern QueueHandle_t xQueue_data;
 extern RTC_DATA_ATTR bool anomaly_detected;
+extern RTC_DATA_ATTR int id_device;
 extern RTC_DATA_ATTR bool anomaly_sent;
 extern RTC_DATA_ATTR bool this_reboot_send_rms;
 extern RTC_DATA_ATTR data_to_send_t anomaly;
