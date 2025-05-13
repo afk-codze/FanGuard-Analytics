@@ -9,9 +9,6 @@
 #include "freertos/task.h"
 #include "driver/uart.h"
 #include "esp_sleep.h"
-#include "esp_log.h"
-#include "esp_timer.h"
-#include <MPU6500_WE.h>
 #include "shared-defs.h"
 
 // Constants
@@ -28,11 +25,10 @@ extern volatile RTC_DATA_ATTR bool fft_init_complete;
 extern RTC_DATA_ATTR int g_sampling_frequency;
 extern float samples_real[INIT_SAMPLE_RATE];
 extern float samples_imag[INIT_SAMPLE_RATE];
-extern RTC_DATA_ATTR float window_rms[3][WINDOW_SIZE];
 extern int g_window_size;
-extern RTC_DATA_ATTR int index_rms;
 extern RTC_DATA_ATTR int num_of_samples;
 extern float features[3];
+extern RTC_DATA_ATTR float session_sum_sq[3];     // Σ(x²) per axis
 
 // FFT instance
 extern ArduinoFFT<float> FFT;
@@ -50,8 +46,6 @@ void fft_adjust_sampling_rate(float max_freq);
 
 // Data handling
 void read_sample(float* x, float* y, float* z);
-float calculateRMS(float* data, int size);
-void add_to_window(float sample[], float window[][WINDOW_SIZE], int size);
 int raw_feature_get_data(size_t offset, size_t length, float *out_ptr);
 
 // Communication
