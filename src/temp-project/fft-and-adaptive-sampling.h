@@ -13,8 +13,8 @@
 
 // Constants
 #define INIT_SAMPLE_RATE 1024      // Initial sampling rate (Hz)
-#define WINDOW_SIZE 10             // Size of RMS calculation window
-#define NOISE_THRESHOLD 0.1        // Minimum magnitude to consider a frequency component
+#define SESSION_DURATION_SEC 30    // Length of one RMS session
+#define NOISE_THRESHOLD 0.5        // Minimum magnitude to consider a frequency component
 #define NYQUIST_MULTIPLIER 2.5     // Safety factor for Nyquist rate
 #define ANOMALY_THRESHOLD 0.5      // Threshold for anomaly detection
 
@@ -25,7 +25,7 @@ extern volatile RTC_DATA_ATTR bool fft_init_complete;
 extern RTC_DATA_ATTR int g_sampling_frequency;
 extern float samples_real[INIT_SAMPLE_RATE];
 extern float samples_imag[INIT_SAMPLE_RATE];
-extern int g_window_size;
+extern RTC_DATA_ATTR int g_window_size;
 extern RTC_DATA_ATTR int num_of_samples;
 extern float features[3];
 extern RTC_DATA_ATTR float session_sum_sq[3];     // Σ(x²) per axis

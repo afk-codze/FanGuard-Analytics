@@ -18,7 +18,7 @@ float samples_real[INIT_SAMPLE_RATE];
 float samples_imag[INIT_SAMPLE_RATE];
 
 // window of RMS
-int g_window_size = WINDOW_SIZE; // Window size for RMS calculation
+RTC_DATA_ATTR int g_window_size = INIT_SAMPLE_RATE * SESSION_DURATION_SEC;
 RTC_DATA_ATTR int num_of_samples = 0;
 
 // counter for numeric series of squared samples
@@ -55,13 +55,13 @@ void read_sample(float* x, float* y, float* z) {
 }
 
 void light_sleep(int duration) {
-  uart_wait_tx_idle_polling((uart_port_t)CONFIG_ESP_CONSOLE_UART_NUM);
+  //uart_wait_tx_idle_polling((uart_port_t)CONFIG_ESP_CONSOLE_UART_NUM);
   esp_sleep_enable_timer_wakeup(1000*1000*duration);
   esp_light_sleep_start();
 }
 
 void deep_sleep(int duration) {
-  uart_wait_tx_idle_polling((uart_port_t)CONFIG_ESP_CONSOLE_UART_NUM);
+  //uart_wait_tx_idle_polling((uart_port_t)CONFIG_ESP_CONSOLE_UART_NUM);
   esp_sleep_enable_timer_wakeup(1000*1000*duration);
   esp_deep_sleep_start();
 }
@@ -203,6 +203,9 @@ void fft_init() {
     fft_adjust_sampling_rate(max_freq);
     Serial.printf("[FFT] Optimal sampling rate: %d Hz\n", g_sampling_frequency);
 
+    g_window_size = g_sampling_frequency * SESSION_DURATION_SEC;
+    Serial.printf("[FFT] Window size (30 s): %d samples\n", g_window_size);
+
     // Mark fft initialization as complete
     fft_init_complete = true;
   }
@@ -230,10 +233,12 @@ void fft_sampling_task(void *pvParameters) {
   while(1) {
     // Read sample from sensor
     read_sample(&sample[0], &sample[1], &sample[2]);
+    unsigned long cycle_start_ms = millis();
 
     Serial.printf("[FFT] Sample %d = x: %.2f, y: %.2f, z: %.2f\n",num_of_samples, sample[0], sample[1], sample[2]);
+    Serial.printf("[WINDOW] g_window_size %d", g_window_size);
 
-    time_stamp = millis();
+    time_stamp = micros();
 
     //accumulate squared sum samples
     session_sum_sq[0] += sample[0] * sample[0];
@@ -241,14 +246,17 @@ void fft_sampling_task(void *pvParameters) {
     session_sum_sq[2] += sample[2] * sample[2];
 
     // set flag this_reboot_send_rms = true if next reboot we send data to mqtt
-    if(( (num_of_samples+1) % g_window_size) == 0)
+    if(((num_of_samples + 1) >= (g_window_size)) == 0)
       this_reboot_send_rms = true; //enables mqtt task 
 
     // Send RMS values periodically
-    if ((num_of_samples % g_window_size) == 0) {
-      rms_array[0] = sqrtf(session_sum_sq[0] / num_of_samples); //  may create a separate function
-      rms_array[1] = sqrtf(session_sum_sq[1] / num_of_samples);
-      rms_array[2] = sqrtf(session_sum_sq[2] / num_of_samples);
+    if (num_of_samples >= (g_window_size)) {
+      
+      float inv_window = 1.0f / g_window_size;
+
+      rms_array[0] = sqrtf(session_sum_sq[0] * inv_window); // may use a separate function
+      rms_array[1] = sqrtf(session_sum_sq[1] * inv_window);
+      rms_array[2] = sqrtf(session_sum_sq[2] * inv_window);
       data_to_send.rms_array = rms_array;
       data_to_send.time_stamp = time_stamp;
 
@@ -262,10 +270,13 @@ void fft_sampling_task(void *pvParameters) {
         anomaly = data_to_send;
       }
 
+      Serial.println("**********SEND************");
       send_data(data_to_send);
 
       // Reset session sum of squares
       session_sum_sq[0] = session_sum_sq[1] = session_sum_sq[2] = 0.0f;
+      num_of_samples = 0;
+
 
       // notify from rms_send_task
        // To be defined:  max delay
@@ -276,8 +287,11 @@ void fft_sampling_task(void *pvParameters) {
         Serial.println("[FFT] Received notification from MQTT task");
       }
     }
-    
-      num_of_samples++;
+
+    unsigned long cycle_end_ms = micros();
+    Serial.printf("\n[TIMING] Cycle duration: %lu microseconds\n", cycle_end_ms - cycle_start_ms);
+
+    num_of_samples++;
     deep_sleep(1000/g_sampling_frequency);
   }
   vTaskDelete(NULL);
