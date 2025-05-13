@@ -6,7 +6,7 @@
 #include "freertos/task.h"
 #include "config.h"
 #include "shared-defs.h"
-
+#include "hmac.h"
 // MQTT Client declaration
 extern PubSubClient client;
 

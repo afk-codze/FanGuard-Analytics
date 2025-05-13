@@ -31,6 +31,8 @@ ArduinoFFT<float> FFT = ArduinoFFT<float>(samples_real, samples_imag, INIT_SAMPL
 // Custom timestamp
 RTC_DATA_ATTR unsigned long millisOffset = 0;
 
+
+
 float features[3] = {0};
 
 unsigned long offsetMillis()
@@ -78,6 +80,9 @@ void light_sleep(int duration) {
 
 void deep_sleep(int duration) {
   uart_wait_tx_idle_polling((uart_port_t)CONFIG_ESP_CONSOLE_UART_NUM);
+  
+  g_is_wakeup_from_deep_sleep = true;
+  
   esp_sleep_enable_timer_wakeup(1000*1000*duration);
   esp_deep_sleep_start();
 }

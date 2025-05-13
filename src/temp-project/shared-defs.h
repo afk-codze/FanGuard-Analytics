@@ -21,5 +21,7 @@ extern RTC_DATA_ATTR bool anomaly_sent;
 extern RTC_DATA_ATTR bool this_reboot_send_rms;
 extern RTC_DATA_ATTR data_to_send_t anomaly;
 extern RTC_DATA_ATTR MPU6500_WE myMPU6500;
+extern RTC_DATA_ATTR bool g_is_wakeup_from_deep_sleep;
+
 void init_shared_queues();
 #endif

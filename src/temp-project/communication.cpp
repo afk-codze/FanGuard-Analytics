@@ -17,7 +17,7 @@
 #include <esp_wifi.h>
 #include <esp_wifi_types.h>
 // Network Configuration
-#define MSG_BUFFER_SIZE 128  // Maximum size for MQTT messages
+#define MSG_BUFFER_SIZE 256  // Maximum size for MQTT messages
 
 /* Global Variables --------------------------------------------------------- */
 
@@ -69,7 +69,16 @@ void wifi_init(){
         Serial.printf("[WiFi] WiFi Status: %d\n", WiFi.status());
         break;
     }
-    vTaskDelay(1);
+
+    vTaskDelay(RETRY_DELAY);
+
+    if (numberOfTries <= 0) {
+      Serial.printf("[WiFi] Max retries exceeded\n");
+      WiFi.disconnect();
+      vTaskDelete(NULL); 
+    } else {
+      numberOfTries--;
+    }
   }
 }
 
@@ -107,17 +116,71 @@ void connect_mqtt(void *pvParameters) {
 
   vTaskDelete(NULL); 
 }
+
+bool prepare_signed_json(data_to_send_t data_to_send, char* json_buffer, size_t buffer_size) {
+  // Create a JSON document for the payload
+  StaticJsonDocument<200> doc;
   
+  // Add sensor data
+  if(data_to_send.anomaly)
+    doc["status"] = "ANOMALY";
+  
+  doc["x"] = data_to_send.rms_array[0];
+  doc["y"] = data_to_send.rms_array[1];
+  doc["z"] = data_to_send.rms_array[2];
+  
+  // Prepare authentication data
+  auth_data_t auth;
+  auth.session_id = g_session_id;
+  auth.seq_number = get_next_sequence_number();
+  auth.timestamp = data_to_send.time_stamp;
+  
+  // Add authentication data to JSON
+  doc["session_id"] = auth.session_id;
+  doc["seq"] = auth.seq_number;
+  doc["time"] = auth.timestamp;
+  
+  // Serialize the JSON document to a temporary buffer for HMAC calculation
+  char temp_buffer[200];
+  size_t json_len = serializeJson(doc, temp_buffer, sizeof(temp_buffer));
+  
+  // Calculate HMAC
+  uint8_t hmac_result[HMAC_OUTPUT_LENGTH];
+  if (!calculate_hmac(temp_buffer, json_len, &auth, hmac_result)) {
+    Serial.println("[AUTH] Failed to calculate HMAC");
+    return false;
+  }
+  
+  // Convert HMAC to hex string
+  char hmac_hex[HMAC_OUTPUT_LENGTH * 2 + 1];
+  hmac_to_hex_string(hmac_result, hmac_hex);
+  
+  // Add HMAC to JSON document
+  doc["hmac"] = hmac_hex;
+  
+  // Serialize the final JSON with HMAC
+  size_t final_len = serializeJson(doc, json_buffer, buffer_size);
+  if (final_len >= buffer_size - 1) {
+    Serial.println("[AUTH] JSON buffer too small");
+    return false;
+  }
+  
+  return true;
+}
+
+
 /**
  * @brief Publishes data to MQTT broker
  */
 void send_to_mqtt(data_to_send_t data_to_send){
-  if(data_to_send.anomaly)
-    snprintf(msg, MSG_BUFFER_SIZE, "{\"status\":\"ANOMALY\",\"x\":%.2f,\"y\":%.2f,\"z\":%.2f,\"time\":%lu}",data_to_send.rms_array[0],data_to_send.rms_array[1],data_to_send.rms_array[2], data_to_send.time_stamp);    
-  else
-    snprintf(msg, MSG_BUFFER_SIZE, "{\"x\":%.2f,\"y\":%.2f,\"z\":%.2f,\"time\":%lu}",data_to_send.rms_array[0],data_to_send.rms_array[1],data_to_send.rms_array[2], data_to_send.time_stamp);
-
+  
   Serial.printf("**** %s ****\n",msg);
+  
+  // Prepare signed JSON message
+  if (!prepare_signed_json(data_to_send, msg, MSG_BUFFER_SIZE)) {
+    Serial.println("[MQTT] Failed to prepare authenticated message");
+    return;
+  }
 
   if(!data_to_send.anomaly){
     if(client.publish(DATASTREAM_RMS_TOPIC, msg))
