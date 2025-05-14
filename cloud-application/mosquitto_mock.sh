@@ -2,17 +2,12 @@
 
 while true; do
     # Generate a random float between 13 and 70
-    value=$(awk -v min=13 -v max=70 'BEGIN {srand(); print min + rand() * (max - min)}')
-
-    # Optional: round to 2 decimal places
-    value=$(printf "%.2f" "$value")
 
     # Publish to MQTT
-    mosquitto_pub -t "dev1/anomalies" -m "$value"
+    mosquitto_pub -t "dev1/anomalies" -m '{"status":"ANOMALY","x":0.266646,"y":1.059339,"z":0.406033,"session_id":10,"seq":1,"time":3484,"hmac":"2a4b138ace1a5f5eafa236274b089e154e0a5efbbafe449ce680e747e830a5a5"}'
 
-    mosquitto_pub -t "dev1/power" -m "$value"
 
-    mosquitto_pub -t "dev1/RMS" -m "$value"
+    mosquitto_pub -t "dev1/RMS" -m '{"status":"ANOMALY","x":0.266646,"y":1.059339,"z":0.406033,"session_id":10,"seq":1,"time":3484,"hmac":"2a4b138ace1a5f5eafa236274b089e154e0a5efbbafe449ce680e747e830a5a5"}'
 
 
     # Wait 5 seconds

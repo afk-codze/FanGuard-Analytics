@@ -1,6 +1,8 @@
 package com.sapienza;
 
+import com.sapienza.dto.SensorData;
 import com.sapienza.subscription.SubscriptionHandler;
+import com.sapienza.verifier.HmacVerifier;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -20,6 +22,8 @@ import org.springframework.messaging.MessagingException;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 
+import java.io.IOException;
+
 @SpringBootApplication
 public class DashboardApplication {
 
@@ -27,7 +31,11 @@ public class DashboardApplication {
     SubscriptionHandler subscriptionHandler;
 
     public static void main(String[] args) {
+
         SpringApplication.run(DashboardApplication.class, args);
+
+        String msg = "{\"status\":\"ANOMALY\",\"x\":0.266646,\"y\":1.059339,\"z\":0.406033,\"session_id\":10,\"seq\":1,\"time\":3484,\"hmac\":\"2a4b138ace1a5f5eafa236274b089e154e0a5efbbafe449ce680e747e830a5a5\"} ";
+        HmacVerifier.verifyHmac(msg);
     }
 
     @Bean

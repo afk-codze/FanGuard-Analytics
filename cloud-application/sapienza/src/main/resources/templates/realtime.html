@@ -31,8 +31,9 @@
           class="m-10 shadow-lg ring-1 ring-black ring-opacity-5 rounded-md place-content-evenly bg-white">
 
         <p class="m-6 text-center font-sans font-medium break-keep">
-            Welcome to our server monitoring system, here you can monitor your server fan situation.<br>
+            Welcome to our server monitoring system, here you can monitor your server fan health status.<br>
             Click on submit to start generating the realtime graph about how much power (mW) is the fan consuming.<br>
+            And the current axes vibration<br>
             You will also be provided with a log of all the anomalies reported, updated in realtime as well!
         </p>
 
@@ -66,7 +67,7 @@
 </div>
 
 
-<div class="grid grid-cols-4 gap-10 w-full ">
+<div class="grid grid-cols-3 grid-rows-2 gap-10 w-full ">
 
 
     <div class=" w-11/12 col-span-2 p-5  justify-self-center rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
@@ -77,30 +78,50 @@
         </div>
 
     </div>
-    <div class="my-20"></div>
-    <div class=" w-11/12 col-span-2 p-5  justify-self-center rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
-
-        <div class="chart w-full">
-            <canvas id="RMS" class="0"></canvas>
-        </div>
-    </div>
-
-    <div class="my-20"></div>
 
 
-    <div class=" col-span-2 w-11/12 p-5  justify-self-center rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+    <div class=" w-11/12 col-span-1 p-5  justify-self-center rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
         <table id="anomalies_table" class="table-auto text-center w-full border-separate rounded" data-currentpage="1">
             <thead class="font-mono bg-slate-600 text-white">
 
             <tr>
-                <th class="m-6 p-2"> Anomalies</th>
+                <th class="m-6 p-2"> Anomalies </th>
             </tr>
             </thead>
 
         </table>
     </div>
 
-    <div class="h-20 m-10"></div>
+
+    <div class=" w-11/12 col-span-2 p-5 my-20  justify-self-center rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+
+        <div class="chart w-full">
+            <canvas id="RMS_X" class="0"></canvas>
+        </div>
+    </div>
+
+    <div></div>
+
+    <div class=" w-11/12 col-span-2 p-5 my-20  justify-self-center rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+
+        <div class="chart w-full">
+            <canvas id="RMS_Y" class="0"></canvas>
+        </div>
+    </div>
+
+    <div></div>
+
+
+    <div class=" w-11/12 col-span-2 p-5 my-20  justify-self-center rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+
+        <div class="chart w-full">
+            <canvas id="RMS_Z" class="0"></canvas>
+        </div>
+    </div>
+
+
+
+    <div class="h-20 m-10"> </div>
 </div>
 
 

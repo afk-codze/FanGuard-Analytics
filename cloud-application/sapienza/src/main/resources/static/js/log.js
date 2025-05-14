@@ -47,12 +47,26 @@ function generateGraphs(id) {
             deviceId : id
         },
         success: function (data) {
-            // Assuming data is an array of objects
-                console.log(data);
-            if (data.length !== 0) {
-                handleChartCreationAndUpdate("Power", data[0], false);
-                handleChartCreationAndUpdate("RMS", data[1], false);
+            console.log(data)
+            const powerData = data[0];
+            const rmsData = data[1];
 
+            let hasData = false;
+
+            if (powerData && powerData.length !== 0) {
+                handleChartCreationAndUpdate("Power", powerData, true);
+                hasData = true;
+            }
+
+            if (rmsData && rmsData.length !== 0) {
+                handleChartCreationAndUpdate("RMS_X", rmsData, true);
+                handleChartCreationAndUpdate("RMS_Y", rmsData, true);
+                handleChartCreationAndUpdate("RMS_Z", rmsData, true);
+                hasData = true;
+            }
+
+            if (hasData) {
+                disableAnimation();
             } else {
                 destroyCharts();
             }

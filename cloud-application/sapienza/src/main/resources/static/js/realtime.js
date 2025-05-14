@@ -32,19 +32,33 @@ $(document).ready(function () {
 });
 
 function generateGraphs(selectedDeviceId) {
-
-
     $.ajax({
         url: '/api/datastream/realtime',
         type: 'GET',
         data: {
-            deviceId: selectedDeviceId // Send as query parameter
+            deviceId: selectedDeviceId
         },
         success: function (data) {
             console.log(data);
-            if (data.length !== 0) {
-                handleChartCreationAndUpdate("Power", data[0], true);
-                handleChartCreationAndUpdate("RMS", data[1], true);
+
+            const powerData = data[0];
+            const rmsData = data[1];
+
+            let hasData = false;
+
+            if (powerData && powerData.length !== 0) {
+                handleChartCreationAndUpdate("Power", powerData, true);
+                hasData = true;
+            }
+
+            if (rmsData && rmsData.length !== 0) {
+                handleChartCreationAndUpdate("RMS_X", rmsData, true);
+                handleChartCreationAndUpdate("RMS_Y", rmsData, true);
+                handleChartCreationAndUpdate("RMS_Z", rmsData, true);
+                hasData = true;
+            }
+
+            if (hasData) {
                 disableAnimation();
             } else {
                 destroyCharts();
@@ -52,6 +66,7 @@ function generateGraphs(selectedDeviceId) {
         },
         error: function () {
             console.log('Error fetching data');
+            destroyCharts();
         }
     });
 }

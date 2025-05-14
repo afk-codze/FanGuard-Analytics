@@ -6,8 +6,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "rms")
-public class RMS {
+@Table(name = "power")
+public class Power {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long Id;
@@ -15,31 +15,21 @@ public class RMS {
     @Column(name = "devId")
     private String devId;
 
-    @Column(name = "rms_x")
-    private Double rms_x;
-
-
-    @Column(name = "rms_y")
-    private Double rms_y;
-
-
-    @Column(name = "rms_z")
-    private Double rms_z;
+    @Column(name = "power")
+    private Double power;
 
     @Column(name = "timestamp")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime timestamp;
 
-    public RMS() {
+    public Power() {
         this.timestamp = LocalDateTime.now();
     }
 
-    public RMS(String Id ,Double rms_x, Double rms_y, Double rms_z) {
+    public Power(String Id , Double power) {
         this();
         this.devId = Id;
-        this.rms_x = rms_x;
-        this.rms_y = rms_y;
-        this.rms_z = rms_z;
+        this.power = power;
     }
 
     public Long getId() {
@@ -58,28 +48,12 @@ public class RMS {
         this.devId = devId;
     }
 
-    public Double getRms_x() {
-        return rms_x;
+    public Double getPower() {
+        return power;
     }
 
-    public void setRms_x(Double rms_x) {
-        this.rms_x = rms_x;
-    }
-
-    public Double getRms_y() {
-        return rms_y;
-    }
-
-    public void setRms_y(Double rms_y) {
-        this.rms_y = rms_y;
-    }
-
-    public Double getRms_z() {
-        return rms_z;
-    }
-
-    public void setRms_z(Double rms_z) {
-        this.rms_z = rms_z;
+    public void setPower(Double power) {
+        this.power = power;
     }
 
     public LocalDateTime getTimestamp() {

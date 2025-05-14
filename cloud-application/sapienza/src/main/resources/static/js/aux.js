@@ -5,17 +5,35 @@ function CustomChart(canva_name, chart) {
     this.canva_name = canva_name;
     this.chart = chart;
 }
-function Dataset(id, sys_data) {
-    this.label = id;
+function Dataset(chartName, sys_data) {
+
     this.data = sys_data
 
     this.fill = false;
     this.tension = 0.1;
     this.showLine = true;
-    if(id == "Power"){
-        this.borderColor = `rgb(54, 197, 4)`;
-    }else{
-        this.borderColor = `rgb(175, 9, 9)`;
+
+    switch (chartName) {
+        case "Power" :
+            this.borderColor = `rgb(54, 197, 4)`;
+            this.label = "Power: mW";
+
+            break
+        case "RMS_X" :
+            this.borderColor = `rgb(75, 128, 179)`;
+            this.label = "RMS_X: g";
+
+            break
+        case "RMS_Y" :
+            this.borderColor = `rgb(147, 112, 166)`;
+            this.label = "RMS_Y: g";
+
+            break
+        case "RMS_Z" :
+            this.borderColor = `rgb(200, 79, 79)`;
+            this.label = "RMS_Z: g";
+
+            break
     }
 }
 
@@ -28,7 +46,6 @@ function handleChartCreationAndUpdate(chartName, db_data, realtime = false) {
 
     var chart = $('#'.concat(chartName));
     if (chart.hasClass("0")) {
-
         chart_list.push(createChart(db_data, createDataset(db_data, realtime,chartName), chartName));
         chart.attr("class", "1");
 
@@ -86,11 +103,21 @@ function createDataset(db_data, realtime, chartName) {
 
     db_data.forEach(obj => {
         var y_value = null;
-        if(chartName == "Power"){
-            y_value = obj.power;
-        }else{
-            y_value = obj.rms
+        switch (chartName) {
+            case "Power" :
+                y_value = obj.power;
+                break
+            case "RMS_X" :
+                y_value = obj.rms_x;
+                break
+            case "RMS_Y" :
+                y_value = obj.rms_y;
+                break
+            case "RMS_Z" :
+                y_value = obj.rms_z;
+                break
         }
+
 
         axes_data.push({x: obj.timestamp, y: y_value})
     });
@@ -145,7 +172,7 @@ function fillAnomaliesTable(data) {
         var anomalyData = [];
         console.log(anomaly);
 
-        anomalyDetails = "Anomaly with value: " + anomaly.anomaly_value.toString() + " ";
+        anomalyDetails = `Anomaly with values:  x: ${anomaly.rms_x.toString()}  y: ${anomaly.rms_y.toString()}  z: ${anomaly.rms_z.toString()} `
 
         anomalyDetails = anomalyDetails + "detected at " + anomaly.timestamp;
         anomalyData.push(anomalyDetails);

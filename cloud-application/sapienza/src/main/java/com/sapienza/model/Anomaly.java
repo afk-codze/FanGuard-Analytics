@@ -16,8 +16,16 @@ public class Anomaly {
     @Column(name = "devId")
     private String devId;
 
-    @Column(name = "anomaly_value")
-    private Double anomaly_value;
+    @Column(name = "rms_x")
+    private Double rms_x;
+
+
+    @Column(name = "rms_y")
+    private Double rms_y;
+
+
+    @Column(name = "rms_z")
+    private Double rms_z;
 
     @Column(name = "timestamp")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
@@ -27,10 +35,12 @@ public class Anomaly {
         this.timestamp =LocalDateTime.now();
     }
 
-    public Anomaly(String id,Double anomaly_value) {
+    public Anomaly(String Id ,Double rms_x, Double rms_y, Double rms_z) {
         this();
-        this.devId = id;
-        this.anomaly_value = anomaly_value;
+        this.devId = Id;
+        this.rms_x = rms_x;
+        this.rms_y = rms_y;
+        this.rms_z = rms_z;
     }
 
     public Long getId() {
@@ -49,12 +59,28 @@ public class Anomaly {
         this.devId = devId;
     }
 
-    public Double getAnomaly_value() {
-        return anomaly_value;
+    public Double getRms_x() {
+        return rms_x;
     }
 
-    public void setAnomaly_value(Double anomaly_value) {
-        this.anomaly_value = anomaly_value;
+    public void setRms_x(Double rms_x) {
+        this.rms_x = rms_x;
+    }
+
+    public Double getRms_y() {
+        return rms_y;
+    }
+
+    public void setRms_y(Double rms_y) {
+        this.rms_y = rms_y;
+    }
+
+    public Double getRms_z() {
+        return rms_z;
+    }
+
+    public void setRms_z(Double rms_z) {
+        this.rms_z = rms_z;
     }
 
     public LocalDateTime getTimestamp() {
