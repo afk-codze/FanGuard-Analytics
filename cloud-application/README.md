@@ -32,3 +32,52 @@ The back end of the application as stated in the previous paragraph uses Java Sp
 At startup the application connects to the MQTT broker and subscribes to the interested topics, when a new message written in json fromat comes from the IoT devices, the application consumes it from the broker, this message is then parsed it into a DTO (Data Transfer Object) using a JSON serializer and then stored on the database. \
 As stated before the application uses javascript at the presentation level to handle the graph generation and other funcitonalities, the data needed to fill the graphs comes from a ajax request to an api url to the backend that processes the request, interacts with the DB to retrieve the data , process it into a service class and finally returns it as response.\
 Notice that before storing the data retrieved from the MQTT broker the system verifies the hmac contained in the message, if it is not valid the message is dropped, this security mechanism is used to prevent possible replay attacks.
+
+## How to install and run
+
+The following steps explain the set up neede to make this application work:
+
+### Dependencies:
+
+* Install the open-jdk-17 and postgresql on your machine:
+  ```
+  sudo apt install openjdk-17-jdk postgresql -Y
+  ```
+* Create a new user in the psql console environment with a password
+  ```
+  $ sudo -i -u postgres
+  $ psql
+  CREATE USER your_username WITH PASSWORD 'your_password';
+  CREATE DATABASE your_dbname;
+  GRANT ALL PRIVILEGES ON DATABASE your_dbname TO your_username;
+  \q
+  $ psql -U your_username -d your_dbname -h localhost
+
+  ```
+ * Clone from github this repository, application files can be found in `cloud-application>sapienza`
+ 
+### Environment Variables:
+
+  * Navigate `sapienza` directory until you find in folder `resources` a file named `application.properties`
+    ```
+    spring.datasource.url=jdbc:postgresql://localhost:5432/your_dbname
+    spring.datasource.username=your_username
+    spring.datasource.password=your_password
+    spring.datasource.driver-class-name=org.postgresql.Driver
+
+    ```
+    modify these variables with your values
+
+### Running:
+
+* Start mosquitto server using from bash:
+
+  ```
+  $ mosquitto
+  ```
+* Build and start the application:
+  ```
+  $ cd ./sapienza
+  $ ./mwnw spring-boot:run
+  ```
+* You can now access the application at url: `http://localhost:8080/`
