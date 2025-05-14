@@ -1,31 +1,41 @@
-# VoltSky-Analytics  
-A smart IoT monitoring solution for power lines, providing real-time weather data and predictive insights to enhance reliability and maintenance efficiency.  
+# FanGuard  
+**Edge-AI predictive-maintenance node for server-rack fans**  
 
-👨‍💻 **Team:**  
+## Introduction
+Server-rack fans are critical to datacentre uptime, but mechanical wear gradually introduces excessive vibration and current spikes that precede outright failure. **FanGuard** sits directly on the fan power rail, sampling both vibration (ADXL345, 3-axis) and power draw (INA219).  
+A lightweight anomaly-detection model runs in real-time on an **ESP32** under **FreeRTOS**, pushing alerts to the facility’s MQTT broker and main control dashboard.
+
+---
+
+## Components & Wiring
+
+---
+
+## AI / Machine-Learning Pipeline
+
+---
+
+## Energy Consumption
+
+---
+
+## Latency Profile
+
+---
+
+## Security Implications
+
+
+---
+
+## How to Reproduce (quick start)
+
+---
+
+
+## 👨‍💻 **Team:**  
 - Massimiliano Vitale: [Linkedin](https://www.linkedin.com/in/massimiliano-vitale/)
 - Luca Cornici: [Linkedin](https://www.linkedin.com/in/luca-cornici-a31a822b9/)  
 - Angelo Pio Pompeo: [Linkedin](https://it.linkedin.com/in/angelo-pio-pompeo-6a2960225)
 
 📑 **Project Presentation:** [VoltSky-Analytics Presentation Deck](https://www.canva.com/design/DAGiGgqm3vg/dWG1Gl8j_IxVZVRmSFhmMA/view?utm_content=DAGiGgqm3vg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=ha00e9f673b)  
-
----
-### First Iteration Feedbacks
-
-1. **Make the project applicable to the DIAG building.**  
-   Ensure the project is tailored to the specific conditions and requirements of the DIAG building.
-
-2. **Learning on the thing, not on the cloud.**  
-   Focus on local learning and processing, rather than relying on cloud-based solutions.
-
-3. **Support sampling frequency with numbers derived from real-world observations.**  
-   Adjust the sampling frequency based on actual, observed data from real-world scenarios.
-
-4. **Fix the duty cycle plot for proportional representation and correct the units.**  
-   Ensure that the duty cycle plot is properly scaled, and correct the units of measurement. Additionally, implement hibernation mode instead of deep sleep.
-
----
-### Proposals to adapt the project
-
-1. Monitoring environment to make irrigation system smarter
-2. Monitoring environment to give people information about DIAG weather conditions
-3. Monitoring roof's solar panel components condition for best solar exposure
