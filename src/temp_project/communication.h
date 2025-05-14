@@ -35,5 +35,4 @@ void print_rtts();
 void print_volume_of_communication();
 void start_time_communication();
 void end_time_comunication();
-void communication_function();
-void comunication_task(void *args);
+void communication_task(void *args);

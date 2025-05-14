@@ -74,9 +74,7 @@ void setup() {
   myMPU6500.setAccDLPF(MPU9250_DLPF_6);
   
   //xTaskCreatePinnedToCore(send_anomaly_task, "send_anomaly_task", 4096, NULL, 1, &send_anomaly_task_handler,1);
-  //xTaskCreate(comunication_task, "comunication_task", 4096, NULL, 1, &wifi_task_handle);
-  //ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(100000));
-  xTaskCreate(fft_sampling_task, "fft_sampling_task", 8192, send_anomaly_task_handler, 2, &fft_sampling_task_handle);
+  xTaskCreatePinnedToCore(fft_sampling_task, "fft_sampling_task", 8192, NULL, 1, &fft_sampling_task_handle,0);
   //xTaskCreatePinnedToCore(buzzer_anomaly_task, "buzzer_anomaly_task", 4096, NULL, 1, NULL,1);
 }
 

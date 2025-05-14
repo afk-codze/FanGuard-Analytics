@@ -3,6 +3,7 @@
 #include "config.h"
 #include "shared-defs.h"
 
+volatile bool sending_window = false;
 QueueHandle_t xQueue_data = NULL;
 TaskHandle_t fft_sampling_task_handle = NULL;
 TaskHandle_t communication_mqtt_task_handle = NULL;

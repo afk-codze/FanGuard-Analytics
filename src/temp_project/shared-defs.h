@@ -17,7 +17,7 @@ extern TaskHandle_t fft_sampling_task_handle;
 extern TaskHandle_t main_task_handle;
 extern TaskHandle_t communication_mqtt_task_handle;
 extern TaskHandle_t wifi_task_handle;
-
+extern volatile bool sending_window;
 extern QueueHandle_t xQueue_data;
 extern bool anomaly_detected;
 extern int id_device;

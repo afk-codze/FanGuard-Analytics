@@ -1,6 +1,6 @@
 #pragma once
-#define WIFI_SSID "Realme"
-#define WIFI_PASSWORD "python_00"
+#define WIFI_SSID ""
+#define WIFI_PASSWORD ""
 #define MQTT_SERVER "192.168.220.152"
 #define MQTT_PORT 8883
 const uint8_t HMAC_KEY[32] = {

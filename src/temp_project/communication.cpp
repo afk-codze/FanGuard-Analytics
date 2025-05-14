@@ -117,10 +117,9 @@ void send_mqtt(){
     send_to_mqtt(anomaly);
   }
   
-  if(xQueueReceive(xQueue_data, &rms_data, (TickType_t)100)) {
+  while(xQueueReceive(xQueue_data, &rms_data, (TickType_t)100)) {
     Serial.printf("----%d,%d----",anomaly.time_stamp,rms_data.time_stamp);
     send_to_mqtt(rms_data);
-    
   }
 }
 
@@ -195,23 +194,24 @@ void send_to_mqtt(data_to_send_t data_to_send){
   }
   const char* topic = topicStr.c_str();
   Serial.printf("\ndata_to_send.anomaly:%d,anomaly_sent:%d,anomaly_detected:%d\n",data_to_send.anomaly,anomaly_sent,anomaly_detected);
-  if(!data_to_send.anomaly || (data_to_send.anomaly && !anomaly_sent)){
-    Serial.printf("\n**** %s ****\n",msg);
-    //Serial.printf("\ndata_to_send.anomaly:%d,anomaly_sent:%d,anomaly_detected:%d\n",data_to_send.anomaly,anomaly_sent,anomaly_detected);
-    Serial.printf("\nTopic: %s\n",topic);
-    if (client.publish(topic, msg)){
-      Serial.printf("[MQTT] Publishing: %s\n", msg);
-      if (data_to_send.anomaly)
-        anomaly_sent = true;
-    }else{
-      Serial.printf("[MQTT] ERROR while publishing rms: %s\n", msg);
-      Serial.printf("client.connected(): %d",client.connected());
-    }
+  Serial.printf("\n**** %s ****\n",msg);
+  //Serial.printf("\ndata_to_send.anomaly:%d,anomaly_sent:%d,anomaly_detected:%d\n",data_to_send.anomaly,anomaly_sent,anomaly_detected);
+  Serial.printf("\nTopic: %s\n",topic);
+  if (client.publish(topic, msg)){
+    Serial.printf("[MQTT] Publishing: %s\n", msg);
+    if (data_to_send.anomaly)
+      anomaly_sent = true;
+  }else{
+    Serial.printf("[MQTT] ERROR while publishing rms: %s\n", msg);
+    Serial.printf("client.connected(): %d",client.connected());
   }
 }
 
-void communication_function(){
+void communication_task(void *args){
+  esp_wifi_start();
   wifi_init();
   connect_mqtt();
   send_mqtt();
+  sending_window = false;
+  vTaskDelete(NULL);
 }

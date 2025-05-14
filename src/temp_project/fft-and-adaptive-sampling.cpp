@@ -61,7 +61,6 @@ void light_sleep(int duration) {
   uart_wait_tx_idle_polling((uart_port_t)CONFIG_ESP_CONSOLE_UART_NUM);
   esp_wifi_stop();
   esp_light_sleep_start();
-  esp_wifi_start();
 }
 
 void deep_sleep(int duration) {
@@ -226,7 +225,7 @@ void fft_sampling_task(void *pvParameters) {
   float sample[3] = {0,0,0};
   float rms_array[3] = {0,0,0};
   data_to_send_t data_to_send;
-
+  const TickType_t xFrequency = pdMS_TO_TICKS(1000 / g_sampling_frequency);
   unsigned long time_stamp = 0;
 
   if(!fft_init_complete)
@@ -236,6 +235,7 @@ void fft_sampling_task(void *pvParameters) {
   
   
   while(1) {
+    TickType_t xLastWakeTime = xTaskGetTickCount();
 
     //reset data_to_send at each cycle
     data_to_send.anomaly = false;
@@ -275,9 +275,15 @@ void fft_sampling_task(void *pvParameters) {
       }
 
       send_data(data_to_send);
-      communication_function();
+      if(!sending_window){
+        sending_window = true;
+        xTaskCreatePinnedToCore(communication_task, "communication_task", 4096, NULL, 1,NULL,1);
+      }
       // Reset session sum of squares
-      session_sum_sq[0] = session_sum_sq[1] = session_sum_sq[2] = 0.0f;
+      session_sum_sq[0] = 0.0f;
+      session_sum_sq[1] = 0.0f;
+      session_sum_sq[2] = 0.0f;
+
       num_of_samples = 0;
 
     }
@@ -287,7 +293,13 @@ void fft_sampling_task(void *pvParameters) {
     // Calculate sleep time in milliseconds
     int sleep_period_ms = (1000 / g_sampling_frequency); // Period in milliseconds
     Serial.printf("\nsample %d,%d \n", num_of_samples,g_window_size);
-    light_sleep(1000 / g_sampling_frequency);
+    if(sending_window){
+      Serial.print("DELAY\n");
+      vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    }else{
+      Serial.print("SLEEP\n");
+      light_sleep(1000 / g_sampling_frequency);
+    }
   }
   vTaskDelete(NULL);
 }
