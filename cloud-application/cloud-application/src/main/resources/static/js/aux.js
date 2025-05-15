@@ -68,9 +68,9 @@ function createChart(sys_data, dataset, title) {
 
     var unit ;
     if(title == "Power"){
-        unit = "mW"
+        unit = "Power : mW"
     }else{
-        unit = "g"
+        unit = "Vibration :  g"
     }
 
     var chart = new Chart(elem,

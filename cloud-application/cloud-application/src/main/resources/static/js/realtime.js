@@ -23,7 +23,7 @@ $(document).ready(function () {
         interval_id = setInterval(function() {
             generateGraphs(selectedDeviceId);  // Update graphs
             generateAnomaliesTable(selectedDeviceId);  // Update anomalies table
-        }, 5000);
+        }, 1000);
     });
 
 

@@ -53,7 +53,7 @@ public class DashboardApplication {
     public MessageProducer inbound() {
 
         MqttPahoMessageDrivenChannelAdapter adapter =
-                new MqttPahoMessageDrivenChannelAdapter("tcp://localhost:1883", "testClient", mqttClientFactory(),
+                new MqttPahoMessageDrivenChannelAdapter("tcp://broker.emqx.io:1883", "testClient", mqttClientFactory(),
                         "+/RMS", "+/anomalies", "+/power");
         adapter.setCompletionTimeout(5000);
         adapter.setConverter(new DefaultPahoMessageConverter());
