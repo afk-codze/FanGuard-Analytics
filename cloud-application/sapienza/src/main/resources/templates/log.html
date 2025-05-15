@@ -29,11 +29,10 @@
 <div class="w-1/2 justify-self-center">
     <form id="log_submit" class=" m-10 shadow-lg ring-1 ring-black ring-opacity-5   place-content-evenly bg-white rounded-md">
 
-        <div class=" flex flex-col flex-auto gap-2  flex p-5 justify-self-center">
+        <div class=" grid grid-cols-2 p-5 justify-self-center">
 
-            <div class="flex flex-row">
 
-                <div class="time-selector ">
+                <div class="shadow-lg shadow-gray-400 ring-1  ring-black ring-opacity-5 m-2 p-2 rounded ">
                     <div class="grid grid-rows-2">
                         <label for="start_time" class="label-time">START</label>
                         <input type="datetime-local" id="start_time" >
@@ -42,18 +41,17 @@
 
                 </div>
 
-                <div class="time-selector">
+                <div class=" shadow-lg shadow-gray-400 ring-1 ring-black ring-opacity-5 m-2 p-2 rounded ">
 
                     <div class="grid grid-rows-2">
                         <label for="end_time" class="label-time">END</label>
                         <input type="datetime-local" id="end_time" >
                     </div>
                 </div>
-            </div>
 
 
             <!-- Device ID Selector -->
-            <div class="mt-4 p-4 w-1/2 flex justify-center border rounded-md border-gray-300 bg-slate-600">
+            <div class="mt-4 p-4 w-1/2 col-span-2 flex justify-self-center border rounded-md border-gray-300 bg-slate-600 shadow-lg shadow-gray-400 ring-1 ring-black ring-opacity-5">
                 <label for="deviceId" class="block text-sm font-medium text-white mb-2">Select Device ID</label>
                 <select id="deviceId" name="deviceId"
                         class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 px-4">
@@ -65,13 +63,13 @@
             </div>
 
             <div class="mt-4  w-full col-span-2 grid grid-cols-2">
-                <div class="mt-4 w-1/2 justify-self-center ">
+                <div class="mt-4  justify-self-center ">
                     <button id="submit"
                             class="custom_button">
                         Submit
                     </button>
                 </div>
-                <div class="mt-4 w-1/2 justify-self-center">
+                <div class="mt-4  justify-self-center">
                     <button id="reset"
                             class="custom_button">
                         Reset
