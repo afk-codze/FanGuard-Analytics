@@ -140,9 +140,20 @@ bool prepare_signed_json(data_to_send_t data_to_send, char* json_buffer, size_t 
   if(data_to_send.anomaly)
     doc["status"] = "ANOMALY";
   
-  doc["x"] = data_to_send.rms_array[0];
-  doc["y"] = data_to_send.rms_array[1];
-  doc["z"] = data_to_send.rms_array[2];
+  char buffer[10];
+  float rounded_value;
+
+  sprintf(buffer, "%.2f", data_to_send.rms_array[0]);
+  sscanf(buffer, "%f", &rounded_value);
+  doc["x"] = rounded_value;
+
+  sprintf(buffer, "%.2f", data_to_send.rms_array[1]);
+  sscanf(buffer, "%f", &rounded_value);
+  doc["y"] = rounded_value;
+
+  sprintf(buffer, "%.2f", data_to_send.rms_array[2]);
+  sscanf(buffer, "%f", &rounded_value);
+  doc["z"] = rounded_value;
   
   // Prepare authentication data
   auth_data_t auth;
