@@ -20,7 +20,7 @@ A lightweight anomaly-detection model runs in real-time on an **ESP32** under **
 - **Simplicity and Low Computational Cost**: Calculating RMS is straightforward and computationally inexpensive, reducing the impact on system responsiveness and energy consumption.
 
 
-## References:
+#### References:
     - https://dynamox.net/en/blog/the-peak-peak-to-peak-and-rms-values-in-vibration-analysis
     - https://doi.org/10.1016/j.dib.2024.110866
     - https://www.researchgate.net/figure/Anomaly-detection-velocity-RMS-and-acceleration-peak-to-peak-in-a-form-of-a-box-plots_fig7_349233935 
