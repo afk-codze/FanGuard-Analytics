@@ -1,4 +1,4 @@
-# FanGuard  
+# FanGuard - Analytics
 Edge-AI predictive-maintenance node for server-rack fans
 
 ## Introduction
@@ -7,7 +7,23 @@ A lightweight anomaly-detection model runs in real-time on an **ESP32** under **
 
 ![ChatGPT Image May 15, 2025, 03_28_13 PM](https://github.com/user-attachments/assets/df8f4223-56ef-4024-b31e-7067eb2008d1)
 
-TODO: why RMS?
+---
+
+## Why we chose RMS?
+
+
+- **Overall Vibration Level**: RMS provides a single, scalar value that represents the overall energy or intensity of the vibration signal over a given time window. This makes it easy to track changes in the general vibration level of the fan.   
+
+- **Sensitivity to Changes**: A significant increase in the RMS value often indicates a change in the fan's operational state, which could be cause by anomalies.
+
+- **Correlation with Energy**: RMS is proportional to the energy of the vibration. Increased vibration energy is a key indicator of potential problems in rotating machinery.   
+- **Simplicity and Low Computational Cost**: Calculating RMS is straightforward and computationally inexpensive, reducing the impact on system responsiveness and energy consumption.
+
+
+## References:
+    - https://dynamox.net/en/blog/the-peak-peak-to-peak-and-rms-values-in-vibration-analysis
+    - https://doi.org/10.1016/j.dib.2024.110866
+    - https://www.researchgate.net/figure/Anomaly-detection-velocity-RMS-and-acceleration-peak-to-peak-in-a-form-of-a-box-plots_fig7_349233935 
 
 ---
 
@@ -55,7 +71,95 @@ The INT8-quantised classifier exhibits high confidence and generalisation on the
 
 ---
 
-## Energy Consumption
+## Power consumption: measurements
+
+![WhatsApp Image 2025-05-15 at 15 41 33](https://github.com/user-attachments/assets/efa06ee1-41e3-44f0-9461-c42c3ed94b26)
+
+
+## Power Consumption: analysis
+
+This analysis compares two power scenarios for a device over a total duration of 35 seconds:
+1.  **Full Active Mode**: A constant power consumption of 400mW for the entire 35 seconds (Sampling time + RMS Calculation + Wifi/MQTT communication ).
+2.  **Hybrid Mode**: An initial period of high activity (400mW for 5 seconds), this rappresents Wifi/MQTT communication with5 seconds in the worst case scenario (NUM_MAX_RETRIES * DELAY), followed by a longer period (30 seconds), that rappresents the sampling/rms calculation, utilizing a low-power state (light sleep) with periodic, short bursts of higher power for sampling. **The sampling phase assumes 4ms active time and 1ms light sleep time per cycle (Worst case).**
+
+
+This comparison helps to illustrate the energy savings we achive on our system. That garantees an life battery time of ~
+
+### Parameters
+
+| Parameter             | Value         |
+|-----------------------|---------------|
+| **Full Active Power** | 400 mW        |
+| **Light Sleep Power** | 25 mW         |
+| **Active Burst Power**| 200 mW        |
+| **Sampling Frequency**| 200 Hz        |
+| **Sampling Cycle** | 5 ms (1/200 Hz) |
+| **Assumed Active Time per Sample** | **4 ms** |
+| **Assumed Sleep Time per Sample** | **1 ms** (5 ms - 4 ms) |
+| **Total Duration Compared** | 35 seconds |
+
+
+### Calculations
+
+#### **Scenario 1: Full Active Mode (35 seconds)**
+
+In this scenario, the device consumes a constant 400 mW for the entire 35-second duration.
+
+-   **Total Energy**:
+    ```
+    Energy = Power * Time
+    Energy = 400 mW * 35 s = 14000 mJ
+    ```
+
+
+#### **Scenario 2: Hybrid Mode (5s Active + 30s Light Sleep/Sampling - Revised)**
+
+This scenario consists of two distinct phases:
+
+1.  **First 5 seconds (Initial Active Phase)**: The device consumes 400 mW for the first 5 seconds.
+    ```
+    Energy_initial = 400 mW * 5 s = 2000 mJ
+    ```
+
+2.  **Next 30 seconds (Sampling Phase)**: For the remaining 30 seconds, the device cycles between light sleep (25 mW) and brief active bursts (200 mW) for sampling at 200 Hz, with the revised timing (4ms active, 1ms sleep).
+
+    * **Sampling Cycle Details**: At 200 Hz, each sampling cycle takes 5 ms. Within each 5 ms cycle, the device is active for **4 ms** and in light sleep for **1 ms**.
+
+    * **Energy per Sampling Cycle**:
+        ```
+        Energy_cycle = (Active Time * Active Burst Power) + (Sleep Time * Light Sleep Power)
+        Energy_cycle = (4 ms * 200 mW) + (1 ms * 25 mW) = 800 mJ + 25 mJ = 825 mJ per 5ms cycle
+        ```
+
+    * **Average Power during Sampling Phase**:
+        ```
+        Avg Power during Sampling = Energy per Cycle / Cycle Time
+        Avg Power during Sampling = 825 mJ / 5 ms = 165 mW
+        ```
+
+    * **Energy for 30 seconds of Sampling**:
+        ```
+        Energy_sampling = Avg Power during Sampling * Time
+        Energy_sampling = 165 mW * 30 s = 4950 mJ
+        ```
+
+3.  **Total Energy for Scenario 2 (over 35s)**: The total energy is the sum of the energy from the initial active phase and the sampling phase.
+    ```
+    Total Energy_hybrid = Energy_initial + Energy_sampling
+    Total Energy_hybrid = 2000 mJ + 4950 mJ = 6950 mJ
+    ```
+
+### Results
+
+| **Scenario** |Avg. Power |
+|----------------------------|----------|
+| **1. 35s Full Active** | 400 mW     |
+| **2. 5s Active + 30s Hybrid** | **198.6 mW**|
+
+
+### Key Insights
+
+1.  **Energy Savings**: The hybrid approach offers energy savings, even when considering the worst case scenario of ripartition of active mode and light sleep mode. With these parameters (4ms active/1ms sleep), the hybrid mode consumes approximately **50.4% less energy** over 35 seconds compared to staying fully active.
 
 ---
 
