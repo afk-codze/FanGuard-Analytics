@@ -65,11 +65,7 @@ function generateGraphs(id) {
                 hasData = true;
             }
 
-            if (hasData) {
-                disableAnimation();
-            } else {
-                destroyCharts();
-            }
+            disableAnimation();
 
         },
         error: function () {

@@ -53,7 +53,7 @@ public class SubscriptionHandler {
                 try {
                     sensorData= SensorData.fromJson(message);
                     if (HmacVerifier.verifyHmac(message) == false ) {
-                        System.out.println("Hmac check not passed fropping message");
+                        System.out.println("Hmac check not passed dropping message");
                         break;
                     }
                 } catch (IOException e) {

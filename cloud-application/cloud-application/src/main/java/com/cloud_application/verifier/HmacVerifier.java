@@ -66,11 +66,13 @@ public class HmacVerifier {
 
             boolean isCorrect = calculatedHmacHex.equalsIgnoreCase(receivedHmacHex);
 
-            /*System.out.println("Original JSON: " + jsonString);
+            /*
+            System.out.println("Original JSON: " + jsonString);
             System.out.println("Reconstructed JSON: " + payloadJsonString);
             System.out.println("HMAC match: " + isCorrect);
             System.out.println("Expected HMAC: " + receivedHmacHex);
-            System.out.println("Calculated HMAC: " + calculatedHmacHex);*/
+            System.out.println("Calculated HMAC: " + calculatedHmacHex);
+*/
             return isCorrect;
 
         } catch (Exception e) {

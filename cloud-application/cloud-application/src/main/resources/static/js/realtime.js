@@ -20,10 +20,11 @@ $(document).ready(function () {
         clearInterval(interval_id);
         generateGraphs(selectedDeviceId);
         generateAnomaliesTable(selectedDeviceId);
+
         interval_id = setInterval(function() {
             generateGraphs(selectedDeviceId);  // Update graphs
             generateAnomaliesTable(selectedDeviceId);  // Update anomalies table
-        }, 1000);
+        }, 4000);
     });
 
 
