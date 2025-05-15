@@ -16,22 +16,22 @@ function Dataset(chartName, sys_data) {
     switch (chartName) {
         case "Power" :
             this.borderColor = `rgb(54, 197, 4)`;
-            this.label = "Power: mW";
+            this.label = "Power";
 
             break
         case "RMS_X" :
             this.borderColor = `rgb(75, 128, 179)`;
-            this.label = "RMS_X: g";
+            this.label = "RMS_X";
 
             break
         case "RMS_Y" :
             this.borderColor = `rgb(147, 112, 166)`;
-            this.label = "RMS_Y: g";
+            this.label = "RMS_Y";
 
             break
         case "RMS_Z" :
             this.borderColor = `rgb(200, 79, 79)`;
-            this.label = "RMS_Z: g";
+            this.label = "RMS_Z";
 
             break
     }
