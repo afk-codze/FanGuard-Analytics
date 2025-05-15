@@ -73,6 +73,9 @@ The INT8-quantised classifier exhibits high confidence and generalisation on the
 
 ## Power consumption: measurements
 
+Below is a snapshot of the device’s real-time power draw, captured over multiple operation cycles. The chart highlights three distinct phases—initialization, **active** WiFi/MQTT/SAMPLING, and **light-sleep** sampling.
+
+
 ![WhatsApp Image 2025-05-15 at 15 41 33](https://github.com/user-attachments/assets/efa06ee1-41e3-44f0-9461-c42c3ed94b26)
 
 
