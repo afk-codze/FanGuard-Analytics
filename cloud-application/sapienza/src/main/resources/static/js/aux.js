@@ -66,6 +66,12 @@ function createChart(sys_data, dataset, title) {
 
     var elem = document.getElementById(title);
 
+    var unit ;
+    if(title == "Power"){
+        unit = "mW"
+    }else{
+        unit = "g"
+    }
 
     var chart = new Chart(elem,
         {
@@ -79,6 +85,20 @@ function createChart(sys_data, dataset, title) {
                         display: true,
                         text: title,
                         fullSize: true
+                    }
+                },
+                scales: {
+                    y: {
+                        title: {
+                            display: true,
+                            text: unit
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
                     }
                 }
             }
