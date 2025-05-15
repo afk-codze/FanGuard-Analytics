@@ -36,6 +36,8 @@ The hardware stack is deliberately minimal: a single **ESP32** sits at the centr
 ---
 ## Sampling & Communication Workflow
 
+![Communication task (1)](https://github.com/user-attachments/assets/c3faad33-debe-4a71-bce4-2156f9239219)
+
 The diagram below shows how FanGuard balances high-rate sensor sampling with periodic WiFi/MQTT uploads:
 
 1. **Sampling (30 s)**  
