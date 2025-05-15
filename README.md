@@ -245,7 +245,7 @@ This scenario consists of two distinct phases:
 
 ---
 
-## Security Implications: TODO
+## Security Implications:
 
 ### Security Threats
 
@@ -277,6 +277,46 @@ This scenario consists of two distinct phases:
     - Flooding the system with replayed messages causing denial of service
    
     **Impact**: Outdated or irrelevant data being processed as current, leading to missed anomalies and ineffective monitoring.
+
+### Implementation
+
+We implement Hash-based Message Authentication Code (HMAC) to ensure message integrity and authentication. This method is used at the MQTT level where each message has this format: 
+
+    
+    +----------------------------------------------------------------------+
+    | RMS_X | RMS_Y | RMS_Z | SESSION_ID | SQUENCE_NUM | TIME_STAMP | HMAC |
+    +----------------------------------------------------------------------+
+    
+    
+The HMAC is calculated using:
+
+    
+    HMAC = Hash(SecretKey, Payload + Timestamp + SequenceNumber + SessionID)
+    
+**Key Components**:
+
+- **Hashing function**: SHA256
+
+- **Secret Key**: Shared between server and esp32
+    
+- **Timestamp**: Used to prevents replay attacks with old captured data
+
+- **Sequence Number**: Monotonically increasing counter for each message from a device,
+
+- **Session ID**: Unique identifier generated when the device is programmed and increase whenever the device restarts. A session terminate when an operator restart the device subsequently an anomaly.
+
+### Why Not TLS/SSL?
+
+- **HMAC** is significantly lighter:
+    - TLS handshakes are computationally expensive, requiring asymmetric cryptography
+    - TLS sessions maintain encrypted tunnels for all communications
+    - HMAC only adds a single hash calculation per message
+
+- HMAC works with **standard MQTT**: No need to change broker configuration, Works with brokers that **don't support TLS**
+
+- Mixed-Device Environments: Some devices may not support TLS or have outdated TLS implementations, whereas HMAC can provide consistent security across **heterogeneous** device populations
+
+- **Lower Network Overhead** HMAC reduces bandwidth requirements: TLS adds significant overhead to each packet
 
 ---
 
