@@ -1,9 +1,11 @@
 # FanGuard  
-**Edge-AI predictive-maintenance node for server-rack fans**  
+Edge-AI predictive-maintenance node for server-rack fans
 
 ## Introduction
 Server-rack fans are critical to datacentre uptime, but mechanical wear gradually introduces excessive vibration and current spikes that precede outright failure. **FanGuard** sits directly on the fan power rail, sampling both vibration (MPU6050, 3-axis) and power draw (INA219).  
 A lightweight anomaly-detection model runs in real-time on an **ESP32** under **FreeRTOS**, pushing alerts to the facility’s MQTT broker and main control dashboard.
+
+![ChatGPT Image May 15, 2025, 03_28_13 PM](https://github.com/user-attachments/assets/df8f4223-56ef-4024-b31e-7067eb2008d1)
 
 TODO: why RMS?
 
