@@ -261,7 +261,7 @@ Thanks to this tool an operator can achieve  a global view of the servers fans h
 
 In this section we give an overview of the structure and the technologies used for building the application running on the cloud, the application is called "Monitoring System". 
 
-* __Mosquitto MQTT broker__: This is the junction point between the esp32 and the cloud, it lets transfer data from the IoT device to the cloud application.
+* __MQTT broker__: This is the junction point between the esp32 and the cloud, it lets transfer data from the IoT device to the cloud application.
 * __Java__: The programming language used to build the web application running on the cloud, this object-oriented language is largely used to build web applications thanks to the huge amount of support and libraries it offers.
 * __Java Spring__: Web development framework that supports many integrated modules that speed up the process of web development by integrating many aspects like: Dabates handling, front-end templating, MVC code structure etc.
 * __PostgresSQL__ : Database Management System used to store the data coming from the esp32 and provide historical view of all the data.
@@ -325,11 +325,7 @@ The following steps explain the set up needed to make this application work:
 
 #### Running:
 
-* Start mosquitto server using from bash:
-
-  ```
-  $ mosquitto
-  ```
+* Start an MQTT broker or use a public one
 * Build and start the application:
   ```
   $ cd ./cloud-application
