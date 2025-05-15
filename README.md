@@ -34,6 +34,29 @@ The hardware stack is deliberately minimal: a single **ESP32** sits at the centr
 ![image](https://github.com/user-attachments/assets/a7bb1680-b0de-464d-b349-77e5cd47bde8)
 
 ---
+## Sampling & Communication Workflow
+
+The diagram below shows how FanGuard balances high-rate sensor sampling with periodic WiFi/MQTT uploads:
+
+1. **Sampling (30 s)**  
+   - **Task 1** runs a tight loop at sampling frequency (Hz):  
+     1. Read accelerometer  
+     2. Adds values to the window
+     3. Enter light-sleep
+
+2. **Parallel Execution (≈5 s max)**  
+   - **Task 1** calculate RMS, detects anomalies, pushes to communication queue
+   - **Task 2** (WiFi/MQTT) kicks off while **Task 1** continues sampling.  
+   - To maintain precise sampling frequency (Hz) timing during transmission, **Task 1** uses a delay rather than light-sleep.  
+   - **Task 2** publishes buffered data over WiFi/MQTT.  
+
+3. **Resume Normal Sampling**  
+   - Once communication completes, **Task 1** returns to its light-sleeped sampling frequency (Hz) sampling loop.  
+
+![WhatsApp Image 2025-05-15 at 16 07 55](https://github.com/user-attachments/assets/a50b25fd-5774-41b8-af3d-4292a05e6eda)
+
+
+---
 
 ## AI / Machine-Learning Pipeline
 This project blends classic condition-monitoring features with a tiny neural-network so that **FanGuard can spot abnormal vibration signatures in real-time—without cloud round-trips**. We collect raw samples from the MPU6050 ant then calculate RMS , label them as *normal* or *anomaly*, and train a compact INT8-quantised Keras model in Edge Impulse. Once flashed, the model executes inside TensorFlow Lite Micro on the ESP32.
