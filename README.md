@@ -243,11 +243,8 @@ This scenario consists of two distinct phases:
 
 ---
 
-## Latency Profile
+## Security Implications: TODO
 
----
-
-## Security Implications
 
 
 ---
@@ -256,6 +253,8 @@ This scenario consists of two distinct phases:
 
 The last component of our system is the cloud, this is the final destination of the data gathered and computed by the sensors in order to make this data usable and readable by human operators through a web application. 
 Thanks to this tool an operator can achieve  a global view of the servers fans health status also they can  monitor the situation in realtime and respond quickly to anomalous situations. 
+
+![image](https://github.com/user-attachments/assets/78cf1217-ee41-4ce5-a18b-50fab6d62c78)
 
 ### The Architecture
 
@@ -288,7 +287,11 @@ At startup the application connects to the MQTT broker and subscribes to the int
 As stated before the application uses javascript at the presentation level to handle the graph generation and other graphicacl functionalities, the data needed to fill the graphs is retrieved from the backend through an ajax request that is handled by a back end controller which processes the request, interacts with the DB to retrieve the data , process it into a service class and finally returns it as response.\
 Notice that before storing the data retrieved from the MQTT broker the system verifies the hmac contained in the message, if it is not valid the message is dropped, this security mechanism is used to prevent possible replay attacks.
 
-### How to install and run
+---
+
+## How to install and run (quick start)
+
+### Cloud application
 
 The following steps explain the set up needed to make this application work:
 
@@ -334,9 +337,8 @@ The following steps explain the set up needed to make this application work:
 * You can now access the application at url: `http://localhost:8080/`
 
 
----
+### Arduino sketch: TODO
 
-## How to Reproduce (quick start)
 
 ---
 
