@@ -247,7 +247,36 @@ This scenario consists of two distinct phases:
 
 ## Security Implications: TODO
 
+### Security Threats
 
+1. **Tampering**
+    
+    **Threat**: An attacker could modify the vibration data in transit, potentially causing:   
+    
+    - **False negatives**: Masking actual anomalies to prevent detection
+    - **False positives**: Creating false alarms leading to unnecessary maintenance
+    - **System disruption**: Corrupting data to cause processing errors
+
+    **Impact**: Compromised data integrity leading to incorrect anomaly detection and potentially costly maintenance decisions.
+
+2. **Spoofing**
+
+    **Threat**: An attacker could impersonate legitimate IoT devices by:
+   
+   - Creating fake devices that send fabricated data
+   - Hijacking device identities to inject malicious data
+   
+    **Impact**: data pollution.
+
+4. **Replay Attacks**
+
+    **Threat**: An attacker could capture valid data transmissions and replay them later:    
+        
+    - Resending old "normal" vibration data to hide developing anomalies
+    - Replaying the same data repeatedly to mask actual readings
+    - Flooding the system with replayed messages causing denial of service
+   
+    **Impact**: Outdated or irrelevant data being processed as current, leading to missed anomalies and ineffective monitoring.
 
 ---
 
