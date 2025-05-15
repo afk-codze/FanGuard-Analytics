@@ -55,6 +55,60 @@ The diagram below shows how FanGuard balances high-rate sensor sampling with per
 
 ![WhatsApp Image 2025-05-15 at 16 07 55](https://github.com/user-attachments/assets/a50b25fd-5774-41b8-af3d-4292a05e6eda)
 
+### Why Monitor Server Rack Fans Every 30 Seconds?
+
+This section documents our analysis and reasoning for implementing a 30-second monitoring frequency for server rack fan systems. Our analysis show this is a good balance between detection reliability and system resources.
+
+This system provides early detection of fan anomalies through accelerometer-based vibration monitoring, alerting operators before thermal damage occurs.
+
+#### The Problem: Rapid Temperature Rise
+
+Server racks experience alarmingly quick temperature increases after cooling failure:
+
+- A server rack starting at 20-23°C can reaches critical temperatures in **~5 minutes** after fans failure.
+
+This narrow intervention window requires a carefully calculated monitoring frequency.
+
+####  Response Timeline Components
+
+
+| Component | Time Required | Description |
+|-----------|---------------|-------------|
+| Alert processing | 5 seconds | System processing and alert distribution |
+| Human response | 120 seconds | Staff receiving alert and beginning intervention |
+| Intervention time | 60 seconds | Fix the problem |
+| Safety buffer | 25 seconds | Additional buffer for unexpected delays |
+| **Total response time** | **210 seconds** | From detection to completed intervention |
+
+With temperatures reaching critical levels 5 minutes, this leaves a maximum allowable detection delay of **90 seconds**.
+
+#### Monitoring Frequency Analysis
+
+We evaluated multiple monitoring intervals:
+
+| Monitoring Frequency | Worst-Case Detection Delay | Safety margin | Viable? |
+|--------------------:|---------------------------:|------------------:|:-------:|
+|              5 sec  |                    5.0 sec |           85 sec  |   YES   |
+|             10 sec  |                   10.0 sec |           80 sec  |   YES   |
+|             15 sec  |                   15.0 sec |           75 sec  |   YES   |
+|           **30 sec**|                **30.0 sec**|         **60 sec**| **YES** |
+|             60 sec  |                   60.0 sec |           30 sec  |   YES   |
+|            120 sec  |                  120.0 sec |           none  |    NO   |
+|            180 sec  |                  180.0 sec |           none  |    NO   |
+|            300 sec  |                  300.0 sec |           none  |    NO   |
+
+#### Why 30 Seconds is Optimal
+
+While intervals up to 60 seconds would technically work, we chose **30 seconds** for these reasons:
+
+- **Safety margin**: Provides additional buffer if response is delayed 
+- **Variable loads**: System load fluctuations could accelerate temperature rise
+- **Balance**: Strikes optimal balance between detection reliability and system resource utilization
+
+#### References
+
+- ASHRAE TC 9.9 Thermal Guidelines for Data Processing Environments
+
 
 ---
 
