@@ -16,16 +16,16 @@
 #include "esp_pm.h"
 
 #define BUZZER_PIN 23
-//MPU6500_WE myMPU6500(MPU6500_ADDR);
-const int csPin = 5;  // Chip Select Pin
-// const int mosiPin = 22;  // "MOSI" Pin
-// const int misoPin = 21;  // "MISO" Pin
-// const int sckPin = 16;  // SCK Pin
-bool useSPI = true;    // SPI use flag
+MPU6500_WE myMPU6500(MPU6500_ADDR);
+// const int csPin = 5;  // Chip Select Pin
+// // const int mosiPin = 22;  // "MOSI" Pin
+// // const int misoPin = 21;  // "MISO" Pin
+// // const int sckPin = 16;  // SCK Pin
+// bool useSPI = true;    // SPI use flag
 
 
-/* There are two constructors for SPI: */
-MPU6500_WE myMPU6500 = MPU6500_WE(&SPI, csPin, useSPI);
+// /* There are two constructors for SPI: */
+// MPU6500_WE myMPU6500 = MPU6500_WE(&SPI, csPin, useSPI);
 
 TaskHandle_t send_anomaly_task_handler  = NULL;
 

@@ -76,7 +76,8 @@ void wifi_init(){
     if (numberOfTries <= 0) {
       Serial.printf("[WiFi] Max retries exceeded\n");
       WiFi.disconnect();
-      vTaskDelete(NULL); 
+      sending_window = false;
+      vTaskDelete(NULL);; 
     } else {
       numberOfTries--;
     }
@@ -89,6 +90,7 @@ void wifi_init(){
  * 
  */
 void connect_mqtt() {
+  int numberOfTries = WIFI_MAX_RETRIES;
   char clientId[50];
   long r = random(1000);
   sprintf(clientId, "%d", id_device);
@@ -98,6 +100,13 @@ void connect_mqtt() {
   client.setKeepAlive(60);
   
   while (!client.connect(clientId)) {
+    if(numberOfTries <= 0){
+      Serial.printf("[MQTT] Max retries exceeded ");
+      sending_window = false;
+      vTaskDelete(NULL);
+    }else{
+      numberOfTries--;
+    }
     Serial.printf(".");
     vTaskDelay(RETRY_DELAY);
   }
