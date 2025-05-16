@@ -8,9 +8,10 @@ Edge-AI predictive-maintenance node for server-rack fans
 - Luca Cornici: [Linkedin](https://www.linkedin.com/in/luca-cornici-a31a822b9/)  
 - Angelo Pio Pompeo: [Linkedin](https://it.linkedin.com/in/angelo-pio-pompeo-6a2960225)
 
-📑 **Project Presentation:** [FanGuard-Analytics Presentation Deck](https://www.canva.com/design/DAGiGgqm3vg/dWG1Gl8j_IxVZVRmSFhmMA/view?utm_content=DAGiGgqm3vg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=ha00e9f673b) 
- 
+📹 **Project presentation video:** [FanGuard-Analytics Presentation Video](https://youtu.be/Nzetp7tr6uA)
 
+📑 **Project presentation deck:** [FanGuard-Analytics Presentation Deck](https://www.canva.com/design/DAGiGgqm3vg/dWG1Gl8j_IxVZVRmSFhmMA/view?utm_content=DAGiGgqm3vg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=ha00e9f673b) 
+ 
 ---
 
 ## Introduction
