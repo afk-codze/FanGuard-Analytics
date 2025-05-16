@@ -47,6 +47,13 @@ The hardware stack is deliberately minimal: a single **ESP32** sits at the centr
 ![image](https://github.com/user-attachments/assets/a7bb1680-b0de-464d-b349-77e5cd47bde8)
 
 ---
+## General software schema
+
+
+![Editor _ Mermaid Chart-2025-05-16-113630](https://github.com/user-attachments/assets/986a5bac-d331-47e3-bba4-a0d677fa5a5b)
+
+
+
 ## Sampling & Communication Workflow
 
 ![Communication task (1)](https://github.com/user-attachments/assets/c3faad33-debe-4a71-bce4-2156f9239219)
