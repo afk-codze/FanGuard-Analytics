@@ -1,6 +1,18 @@
 # FanGuard - Analytics
 Edge-AI predictive-maintenance node for server-rack fans
 
+---
+
+## 👨‍💻 **Team:**  
+- Massimiliano Vitale: [Linkedin](https://www.linkedin.com/in/massimiliano-vitale/)
+- Luca Cornici: [Linkedin](https://www.linkedin.com/in/luca-cornici-a31a822b9/)  
+- Angelo Pio Pompeo: [Linkedin](https://it.linkedin.com/in/angelo-pio-pompeo-6a2960225)
+
+📑 **Project Presentation:** [FanGuard-Analytics Presentation Deck](https://www.canva.com/design/DAGiGgqm3vg/dWG1Gl8j_IxVZVRmSFhmMA/view?utm_content=DAGiGgqm3vg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=ha00e9f673b) 
+ 
+
+---
+
 ## Introduction
 Server-rack fans are critical to datacentre uptime, but mechanical wear gradually introduces excessive vibration and current spikes that precede outright failure. **FanGuard** sits directly on the fan power rail, sampling both vibration (MPU6050, 3-axis) and power draw (INA219). Specifically, this IoT project is developed for **Sapienza University’s DIAG** structure, focusing on maintaining **high availability** and **fault tolerance** for the laboratory servers.  
 A lightweight anomaly-detection model runs in real-time on an **ESP32** under **FreeRTOS**, pushing alerts to the facility’s MQTT broker and main control dashboard.
@@ -409,14 +421,3 @@ The following steps explain the set up needed to make this application work:
 
 
 ### Arduino sketch: TODO
-
-
----
-
-
-## 👨‍💻 **Team:**  
-- Massimiliano Vitale: [Linkedin](https://www.linkedin.com/in/massimiliano-vitale/)
-- Luca Cornici: [Linkedin](https://www.linkedin.com/in/luca-cornici-a31a822b9/)  
-- Angelo Pio Pompeo: [Linkedin](https://it.linkedin.com/in/angelo-pio-pompeo-6a2960225)
-
-📑 **Project Presentation:** [VoltSky-Analytics Presentation Deck](https://www.canva.com/design/DAGiGgqm3vg/dWG1Gl8j_IxVZVRmSFhmMA/view?utm_content=DAGiGgqm3vg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=ha00e9f673b)  
