@@ -1,0 +1,2 @@
+https://www.gravio.com/en-blog/tutorial-how-to-set-up-a-mosquitto-mqtt-broker-securely----using-client-certificates
+chmod 644 server.key
