@@ -62,6 +62,7 @@ PubSubClient client(wifiClient);
 
 void setup() {
     Serial.begin(115200);
+    unsigned long handshake_start = millis();
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
         delay(1000);
@@ -73,7 +74,13 @@ void setup() {
 
     if (client.connect("arduinoClient")) {
         Serial.println("Connected securely to MQTT broker!");
-        client.publish("test/topic", "Hello via TLS!");
+        
+        client.publish("test/topic", "{\"status\":\"ANOMALY\",\"x\":0.266646,\"y\":1.059339,\"z\":0.406033,\"session_id\":10,\"seq\":1,\"time\":3484}");
+
+        unsigned long handshake_end = millis();
+
+        Serial.print("Transmission Time(ms): ");
+        Serial.println(handshake_end - handshake_start);
     } else {
         Serial.println("Failed to connect");
     }
