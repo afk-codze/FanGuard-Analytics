@@ -21,4 +21,9 @@ public interface RmsRepository extends JpaRepository<RMS, Long> {
             "and d.devId = :devId " +
             "order by timestamp asc")
     List<RMS> findByTimeRange(@Param("devId") String devId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+
+    @Query(value =
+            "SELECT DISTINCT dev_id FROM rms", nativeQuery = true)
+    List<String> findAllDistinctDeviceIds();
 }
