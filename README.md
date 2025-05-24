@@ -340,6 +340,32 @@ The HMAC is calculated using:
 
 ---
 
+## Using TLS/SSL
+
+After our preliminary assessment about using HMAC over a TLS connection to secure our system communication we performed tests to evaluate with solid data the actual performances of the two different approaches and then use this inormation to drive our choice into securing the connection. \\
+Performances though cannot be the only factor to take into consideration when choosing a security mechanism, other important factors are:
+
+* Security guarantees
+* Complexity
+* Interoperatibility
+
+In this paragraph we will briefly compare the two security mechanisms and then contextualize them into our system, also taking into account how our system has evolved from its previous version . \\
+
+### TLS vs HMAC
+
+In the first version of our system we needed to send continously every 30 seconds data packets to the mqtt broker, then the cloud application consumed the messages from the broker and validated the messages's HMAC locally using the shared symmetric key with the esp32 board. The system design required lightweight secured messages to prevent attacks happening during the WIFi communication of 
+data packets from the board to the nearest access point, the solution we used did not ensure the confidentiality of the data but only its integrity and authenticity; this trade-off was considered acceptable as the transmitted data did not contain sensible or valuable information for anyone other than a human operator tasked with the maintenance of the system. \\
+What HMAC introduced was a lightweight security solution that added computational stress and configuration management onto the cloud application.\\
+
+After a review of the system work we transistioned to a different approach by sending to the cloud only relevant information about the detected anomalies, this change in the system behaviour brought
+many improvements, one of these is reducing the frequency of trasnmissions to the broker, by sending less packets less frequently we could switch the system security to a TLSc1.2 connection, a mechanism we found simpler to implement, that increased the security guarantees of the system. \\
+
+Here belowe we show a diagram showing the differences in transmission times between HMAC and TLS:
+
+---picture---
+
+
+
 ## Cloud Application
 
 The last component of our system is the cloud, this is the final destination of the data gathered and computed by the sensors in order to make this data usable and readable by human operators through a web application. 
