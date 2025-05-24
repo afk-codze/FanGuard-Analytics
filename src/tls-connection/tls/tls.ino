@@ -60,19 +60,15 @@ lys9WHQlq2kuyLQZaYfQ+3dQifRA0bRljY0Kz3Bj0xCBHmU1mE8a2sxeIqptapFy
 WiFiClientSecure wifiClient;
 PubSubClient client(wifiClient);
 
-void setup() {
-    Serial.begin(115200);
-    unsigned long handshake_start = millis();
-    WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(1000);
-        Serial.println("Connecting to WiFi...");
-    }
+unsigned long handshake_start;
 
-    wifiClient.setCACert(ca_cert);
+void send_mqtt(){
+
+    handshake_start = millis();
+    wifiClient.setCACert(ca_cert);  
     client.setServer(mqtt_server, mqtt_port);
-
     if (client.connect("arduinoClient")) {
+        
         Serial.println("Connected securely to MQTT broker!");
         
         client.publish("test/topic", "{\"status\":\"ANOMALY\",\"x\":0.266646,\"y\":1.059339,\"z\":0.406033,\"session_id\":10,\"seq\":1,\"time\":3484}");
@@ -86,6 +82,20 @@ void setup() {
     }
 }
 
+void setup() {
+    Serial.begin(115200);
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(1000);
+        Serial.println("Connecting to WiFi...");
+    }
+
+    
+}
+
 void loop() {
     client.loop();
+    send_mqtt();
+    delay(1000);
+
 }
