@@ -60,22 +60,34 @@ lys9WHQlq2kuyLQZaYfQ+3dQifRA0bRljY0Kz3Bj0xCBHmU1mE8a2sxeIqptapFy
 WiFiClientSecure wifiClient;
 PubSubClient client(wifiClient);
 
+#define TLS 0 // 0 for HMAC 1 for TLS
+
 unsigned long handshake_start;
 
 void send_mqtt(){
 
-    handshake_start = millis();
+    handshake_start = micros();
+    #if TLS == 1 
     wifiClient.setCACert(ca_cert);  
+    #endif
     client.setServer(mqtt_server, mqtt_port);
     if (client.connect("arduinoClient")) {
         
         Serial.println("Connected securely to MQTT broker!");
         
-        client.publish("test/topic", "{\"status\":\"ANOMALY\",\"x\":0.266646,\"y\":1.059339,\"z\":0.406033,\"session_id\":10,\"seq\":1,\"time\":3484}");
 
-        unsigned long handshake_end = millis();
 
-        Serial.print("Transmission Time(ms): ");
+        unsigned long handshake_end = micros();
+        #if TLS == 1
+            client.publish("test/topic", "{\"status\":\"ANOMALY\",\"x\":0.266646,\"y\":1.059339,\"z\":0.406033,\"session_id\":10,\"seq\":1,\"time\":3484}");
+            Serial.print("TLS Transmission Time: ");
+        #endif
+
+        #if TLS == 0
+            client.publish("test/topic", "{\"status\":\"ANOMALY\",\"x\":0.266646,\"y\":1.059339,\"z\":0.406033,\"session_id\":10,\"seq\":1,\"time\":3484}");
+            Serial.print("HMAC Transmission Time: ");
+        #endif
+
         Serial.println(handshake_end - handshake_start);
     } else {
         Serial.println("Failed to connect");
