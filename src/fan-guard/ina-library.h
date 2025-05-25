@@ -76,7 +76,7 @@ void ina219_init();
 DataClassification classify_ina();
 
 
-xyzFloat get_averaged_reading_mpu(MPU6500_WE& mpu_instance, int samples);
+xyzFloat get_rms_reading_mpu(MPU6500_WE& mpu_instance, int samples);
 void send_ina_anomaly_mqtt(bool ina_check_classification,float *ina_samples);
 void ina_periodic_check(void *args);
 /**

@@ -26,8 +26,8 @@ void send_anomaly_mqtt(bool anomaly_class,xyzFloat *motion_samples,float *ina_sa
 
 void task_avg_acc(void *args){
   for(int i =0; i<DATA_BUFFER_SIZE;i++){
-    motion_samples[i] = get_averaged_reading_mpu(my_mpu6500,NUM_AVG_ACC);
-    Serial.printf("x_avg:%.2f , y_avg:%.2f , z_avg:%.2f \n",motion_samples[i].x,motion_samples[i].y,motion_samples[i].z);
+    motion_samples[i] = get_rms_reading_mpu(my_mpu6500,NUM_AVG_ACC);
+    Serial.printf("x_rms:%.2f , y_rms:%.2f , z_rms:%.2f \n",motion_samples[i].x,motion_samples[i].y,motion_samples[i].z);
     vTaskDelay(pdMS_TO_TICKS(1));
   }
 

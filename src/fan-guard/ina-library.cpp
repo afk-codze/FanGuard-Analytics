@@ -72,21 +72,24 @@ void ina219_init() {
 // }
 
 
-xyzFloat get_averaged_reading_mpu(MPU6500_WE& mpu_instance, int samples) { 
-  float sum_x = 0;
-  float sum_y = 0;
-  float sum_z = 0;
+xyzFloat get_rms_reading_mpu(MPU6500_WE& mpu_instance, int samples) { 
+  float sum_x_squared = 0;
+  float sum_y_squared = 0;
+  float sum_z_squared = 0;
   xyzFloat temp;
+  
   for (int i = 0; i < samples; i++) {
     temp = mpu_instance.getGValues();
-    sum_x += temp.x;
-    sum_y += temp.y;
-    sum_z += temp.z;
+    sum_x_squared += temp.x * temp.x;
+    sum_y_squared += temp.y * temp.y;
+    sum_z_squared += temp.z * temp.z;
     vTaskDelay(pdMS_TO_TICKS(1));
   }
-  temp.x = sum_x/samples;
-  temp.y = sum_y/samples;
-  temp.z = sum_z/samples;
+  
+  temp.x = sqrt(sum_x_squared / samples);
+  temp.y = sqrt(sum_y_squared / samples);
+  temp.z = sqrt(sum_z_squared / samples);
+  
   return temp;
 }
 
