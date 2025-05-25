@@ -16,6 +16,12 @@
 // FFT sampling rate in Hz. This defines the number of samples collected
 // for both motion and INA data within a specific period.
 #define SAMPLE_RATE 1000
+#define NUM_SAMPLES 50
+#define NUM_AVG_ACC 20
+
+
+void task_avg_acc(void *args);
+void task_flt_ina(void *args);
 
 // --- Function Prototypes ---
 

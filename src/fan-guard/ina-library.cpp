@@ -21,7 +21,6 @@ bool first_reading = true;
 
 RTC_DATA_ATTR float max_deviation = 0;
 RTC_DATA_ATTR int ina_threshold = 0;
-float ina_samples[DATA_BUFFER_SIZE];
 
 float features[DATA_BUFFER_SIZE];
 int feature_idx = 0;
@@ -53,6 +52,42 @@ void ina219_init() {
   prev_current = filtered_current;
 
   Serial.println("INA219 initialized successfully");
+}
+
+// float get_averaged_reading_ina_mpu(float (*read_function1)(),float (*read_function2)(), int samples) { 
+//   float sum_ina = 0;
+//   xyzFloat mpu_sample;
+//   float sum_mpu_x = 0;
+//   float sum_mpu_y = 0;
+//   float sum_mpu_z = 0;
+//   for (int i = 0; i < samples; i++) {
+//     sum_ina += read_function1();
+//     mpu_sample = read_function2();
+//     sum_mpu_x += mpu_sample.x;
+//     sum_mpu_y += mpu_sample.y;
+//     sum_mpu_z += mpu_sample.z;
+//     vTaskDelay(pdMS_TO_TICKS(1));
+//   }
+//   return {sum_ina / samples,sum_mpu_x/samples,sum_mpu_y/samples,sum_mpu_z/samples};
+// }
+
+
+xyzFloat get_averaged_reading_mpu(MPU6500_WE& mpu_instance, int samples) { 
+  float sum_x = 0;
+  float sum_y = 0;
+  float sum_z = 0;
+  xyzFloat temp;
+  for (int i = 0; i < samples; i++) {
+    temp = mpu_instance.getGValues();
+    sum_x += temp.x;
+    sum_y += temp.y;
+    sum_z += temp.z;
+    vTaskDelay(pdMS_TO_TICKS(1));
+  }
+  temp.x = sum_x/samples;
+  temp.y = sum_y/samples;
+  temp.z = sum_z/samples;
+  return temp;
 }
 
 float get_averaged_reading(float (*read_function)(), int samples) { 
@@ -197,7 +232,7 @@ void ina_periodic_check(void *args){
   int local_anomalies = 0;
   bool ina_anomaly = false;
   for (int i =0; i<DATA_BUFFER_SIZE; i++) {
-    features[feature_idx++] = read_ina_filtered();
+    features[feature_idx++] = read_ina_filtered(); 
     vTaskDelay(pdTICKS_TO_MS(1000/PERIODIC_CHECK_SAMPLES));
   }
   ts = millis();

@@ -22,6 +22,7 @@ void deep_sleep() {
   esp_wifi_stop();
   Serial.flush();
   esp_sleep_enable_timer_wakeup(DEEP_SLEEP_INA_US);
+  enable_motion_interrupt(calculated_threshold);
   esp_deep_sleep_start();
 }
 
@@ -75,7 +76,6 @@ void setup() {
   
 
   // Enable the motion interrupt with our calculated threshold
-  enable_motion_interrupt(calculated_threshold);
   Serial.printf("TOTAL TIME UP: %d",millis()-start);
   deep_sleep();
 }

@@ -1,7 +1,10 @@
+
+
 #ifndef INA_ANOMALY_H
 #define INA_ANOMALY_H
-
+#include <MPU9250_WE.h>
 #include <Arduino.h>
+
 #include <Wire.h>
 #include <Adafruit_INA219.h>
 #include "ina-library.h"
@@ -30,7 +33,6 @@ extern Adafruit_INA219 ina219;
 #define PERIODIC_CHECK_SAMPLES 1000
 #define DATA_BUFFER_SIZE 50
 
-extern float ina_samples[DATA_BUFFER_SIZE];
 
 // Variables for filtering
 // Filtered bus voltage in Volts.
@@ -73,6 +75,8 @@ extern RTC_DATA_ATTR float max_deviation; // Assuming this is defined elsewhere 
 void ina219_init();
 DataClassification classify_ina();
 
+
+xyzFloat get_averaged_reading_mpu(MPU6500_WE& mpu_instance, int samples);
 void send_ina_anomaly_mqtt(bool ina_check_classification,float *ina_samples);
 void ina_periodic_check(void *args);
 /**

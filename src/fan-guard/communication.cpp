@@ -32,7 +32,7 @@ char msg[MSG_BUFFER_SIZE];   // Buffer for MQTT messages
 void send_anomaly_mqtt(data_to_send_t ina_anomaly){
   xQueueSend(xQueue_data, &ina_anomaly, 0);
   xTaskCreate(communication_task, "communication_task", 4096, xTaskGetCurrentTaskHandle(), 1, NULL);
-  if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10000)) == 0) {
+  if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(5000)) == 0) {
     // Timeout occurred
     Serial.println("[ERROR] Notification timeout - MQTT task not responding");
   } else {
@@ -134,7 +134,7 @@ void connect_mqtt() {
 void send_mqtt(){
   data_to_send_t data;
   while(xQueueReceive(xQueue_data, &data, (TickType_t)100)) {
-    Serial.printf("----%d----",data.time_stamp);
+    //Serial.printf("----%d----",data.time_stamp);
     send_to_mqtt(data);
   }
 }
@@ -157,9 +157,6 @@ void send_to_mqtt(data_to_send_t data_to_send){
 
   char jsonBuffer[256];
   serializeJson(doc, jsonBuffer, sizeof(jsonBuffer));
-
-  Serial.print("Sending JSON: ");
-  Serial.println(jsonBuffer);
 
   String topicStr;
   if (data_to_send.type == TYPE_MPU) {
