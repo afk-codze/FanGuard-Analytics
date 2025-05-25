@@ -1,3 +1,4 @@
+#include <ina_anomalies_classification_inferencing.h>
 #include "esp_attr.h"
 #include "ina-library.h"
 #include "shared-defs.h"
@@ -20,7 +21,10 @@ bool first_reading = true;
 
 RTC_DATA_ATTR float max_deviation = 0;
 RTC_DATA_ATTR int ina_threshold = 0;
-ina_data_t ina_samples[PERIODIC_CHECK_SAMPLES];
+float ina_samples[DATA_BUFFER_SIZE];
+
+float features[DATA_BUFFER_SIZE];
+int feature_idx = 0;
 
 void ina219_init() {
   Serial.begin(115200);
@@ -55,7 +59,7 @@ float get_averaged_reading(float (*read_function)(), int samples) {
   float sum = 0;
   for (int i = 0; i < samples; i++) {
     sum += read_function();
-    //vTaskDelay(pdMS_TO_TICKS(2));
+    vTaskDelay(pdMS_TO_TICKS(1));
   }
   return sum / samples;
 }
@@ -76,35 +80,15 @@ float low_pass_filter(float new_value, float prev_filtered, float alpha) {
   return alpha * new_value + (1 - alpha) * prev_filtered;
 }
 
-ina_data_t read_ina_filtered() {
-  float raw_bus_voltage = get_averaged_reading(get_bus_voltage, SAMPLE_COUNT);       
-  float raw_shunt_voltage = get_averaged_reading(get_shunt_voltage, SAMPLE_COUNT);   
-  float raw_current = get_averaged_reading(get_current, SAMPLE_COUNT);               
+float read_ina_filtered() {             
   float raw_power = get_averaged_reading(get_power, SAMPLE_COUNT);                   
-  float raw_load_voltage = raw_bus_voltage + (raw_shunt_voltage / 1000);             
-
-  raw_bus_voltage = spike_filter(raw_bus_voltage, prev_bus_voltage, SPIKE_THRESHOLD); 
-  raw_current = spike_filter(raw_current, prev_current, 50.0);                      
-
   if (first_reading) {
-    filtered_bus_voltage = raw_bus_voltage;
-    filtered_shunt_voltage = raw_shunt_voltage;
-    filtered_current = raw_current;
     filtered_power = raw_power;
-    filtered_load_voltage = raw_load_voltage;
     first_reading = false;
   } else {
-    filtered_bus_voltage = low_pass_filter(raw_bus_voltage, filtered_bus_voltage, ALPHA);       
-    filtered_shunt_voltage = low_pass_filter(raw_shunt_voltage, filtered_shunt_voltage, ALPHA); 
-    filtered_current = low_pass_filter(raw_current, filtered_current, ALPHA);                   
     filtered_power = low_pass_filter(raw_power, filtered_power, ALPHA);                        
-    filtered_load_voltage = low_pass_filter(raw_load_voltage, filtered_load_voltage, ALPHA);    
   }
-
-  prev_bus_voltage = filtered_bus_voltage;
-  prev_current = filtered_current;
-
-  return {filtered_power,filtered_load_voltage,filtered_current};
+  return filtered_power;
 }
 
 float calculate_mean(float* array, int size) { 
@@ -136,7 +120,7 @@ bool detect_threshold_anomaly(float reading) {
 
 void build_baseline_ina(void *args){
   for(int i=0; i < BASELINE_SAMPLES;i++){
-    power_readings[i] = read_ina_filtered().fl_power;
+    power_readings[i] = read_ina_filtered();
     Serial.print("Calibrating... "); Serial.print(i);
     Serial.print("/"); Serial.print(BASELINE_SAMPLES);
     Serial.print(" | Power: "); Serial.print(power_readings[i], 2); Serial.println(" mW");
@@ -164,37 +148,64 @@ void build_baseline_ina(void *args){
   vTaskDelete(NULL);
 }
 
-DataClassification classify_ina(ina_data_t *samples){
-  Serial.printf("\n classify_ina \n");
-  return CLASS_1;
+int raw_feature_get_data(size_t offset, size_t length, float *out_ptr) {
+  for (size_t i = 0; i < length; i++) {
+    out_ptr[i] = features[offset + i];
+  }
+  return 0;
 }
+
+data_to_send_t classify() {
+  data_to_send_t data_to_send;
+  signal_t features_signal;
+  features_signal.total_length = DATA_BUFFER_SIZE;
+  features_signal.get_data = &raw_feature_get_data;
+
+  ei_impulse_result_t result = {0};
+
+  EI_IMPULSE_ERROR res = run_classifier(&features_signal, &result, false);
+  if (res != EI_IMPULSE_OK) {
+    ei_printf("ERR: Failed to run impulse (%d)\n", res);
+    return data_to_send;
+  }
+  
+  float max_score = 0;
+  const char* predicted_label = "uncertain";
+  for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
+    ei_printf("  %s: %.5f\n", result.classification[ix].label, result.classification[ix].value);
+    if (result.classification[ix].value > max_score) {
+        max_score = result.classification[ix].value;
+        predicted_label = result.classification[ix].label;
+    }
+  }
+
+  ei_printf("Detected: %s (%.2f confidence)\n", predicted_label, max_score * 100);
+  
+  data_to_send.classification = stringToDataClassification(predicted_label);
+  data_to_send.type = TYPE_INA;
+  data_to_send.time_stamp = millis();
+  data_to_send.prob = max_score * 100;
+
+  return data_to_send;
+}
+
 
 void ina_periodic_check(void *args){
   Serial.printf("*** ina_periodic_check ***");
-  unsigned long start = millis(),ts;
-  int local_anomalies = 0;
   data_to_send_t data_to_send;
+  unsigned long start = millis(),ts_anom_found = 0,ts=0;
+  int local_anomalies = 0;
   bool ina_anomaly = false;
-  for (int i =0; i<PERIODIC_CHECK_SAMPLES; i++) {
-    ina_samples[i] = read_ina_filtered();
-    
-    if(detect_threshold_anomaly(ina_samples[i].fl_power))
-      local_anomalies++;
-
-    if(local_anomalies>=3){
-      ina_anomaly = true;
-      Serial.print("!!! ANOMALY THRESHOLD !!!");
-      break;
-    }
+  for (int i =0; i<DATA_BUFFER_SIZE; i++) {
+    features[feature_idx++] = read_ina_filtered();
     vTaskDelay(pdTICKS_TO_MS(1000/PERIODIC_CHECK_SAMPLES));
   }
   ts = millis();
   Serial.print(ts-start);
-  if(ina_anomaly){
-    data_to_send.classification = classify_ina(ina_samples);
-    data_to_send.type = TYPE_INA;
-    data_to_send.time_stamp = ts;
-    data_to_send.data = "data";
+
+  data_to_send = classify();
+  
+  if(data_to_send.type == TYPE_INA && data_to_send.classification != CLASS_NORMAL){
     send_anomaly_mqtt(data_to_send);
   }
 

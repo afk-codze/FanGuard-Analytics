@@ -6,7 +6,6 @@
 #include "freertos/task.h"
 #include "config.h"
 #include "shared-defs.h"
-#include "hmac.h"
 #include <esp_wifi.h>
 #include <esp_wifi_types.h>
 // MQTT Client declaration

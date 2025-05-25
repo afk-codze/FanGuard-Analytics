@@ -18,17 +18,18 @@ enum DataType {
 
 // Define an enum for 'Classification'
 enum DataClassification {
+  CLASS_NORMAL,
+  CLASS_BEARING,
+  CLASS_OFF,
+  CLASS_FLUCTUATIONS,
   CLASS_UNKNOWN,
-  CLASS_1,
-  CLASS_2,
-  CLASS_3,
 };
 
 struct DATA_TO_SEND{
   unsigned long time_stamp = 0;
   DataType type = TYPE_UNKNOWN;
   DataClassification classification = CLASS_UNKNOWN;
-  char *data = "";
+  float prob = 0;
 };
 
 typedef DATA_TO_SEND data_to_send_t;
@@ -43,6 +44,7 @@ extern QueueHandle_t xQueue_data;
 extern RTC_DATA_ATTR int id_device;
 
 void init_shared_queues();
+DataClassification stringToDataClassification(const char* classificationString);
 const char* dataTypeToString(DataType type);
 const char* dataClassificationToString(DataClassification classification);
 void send_anomaly_mqtt(data_to_send_t ina_anomaly);

@@ -17,7 +17,7 @@ extern Adafruit_INA219 ina219;
 // Alpha value for the low-pass filter, determines smoothing strength.
 #define ALPHA 0.5
 // Delay between readings in milliseconds.
-#define READING_DELAY 20
+#define READING_DELAY 1
 // Threshold for spike filtering, represents the maximum acceptable change between readings.
 #define SPIKE_THRESHOLD 0.7
 
@@ -27,16 +27,10 @@ extern Adafruit_INA219 ina219;
 // Standard deviations from the mean to define an anomaly.
 #define ANOMALY_THRESHOLD 2.3
 
-#define PERIODIC_CHECK_SAMPLES 50
+#define PERIODIC_CHECK_SAMPLES 1000
+#define DATA_BUFFER_SIZE 50
 
-struct INA_DATA{
-  float fl_power;
-  float fl_voltage;
-  float fl_current;
-};
-
-typedef INA_DATA ina_data_t;
-extern ina_data_t ina_samples[PERIODIC_CHECK_SAMPLES];
+extern float ina_samples[DATA_BUFFER_SIZE];
 
 // Variables for filtering
 // Filtered bus voltage in Volts.
@@ -77,9 +71,9 @@ extern RTC_DATA_ATTR float max_deviation; // Assuming this is defined elsewhere 
  * prime the filtering variables.
  */
 void ina219_init();
-DataClassification classify_ina(ina_data_t *samples);
+DataClassification classify_ina();
 
-void send_ina_anomaly_mqtt(bool ina_check_classification,ina_data_t *ina_samples);
+void send_ina_anomaly_mqtt(bool ina_check_classification,float *ina_samples);
 void ina_periodic_check(void *args);
 /**
  * @brief Gets an averaged reading from a sensor function.
@@ -151,7 +145,7 @@ float low_pass_filter(float new_value, float prev_filtered, float alpha);
  *
  * @return The filtered power reading in milliwatts.
  */
-ina_data_t read_ina_filtered();
+float read_ina_filtered();
 
 /**
  * @brief Calculates the mean (average) of an array of float values.

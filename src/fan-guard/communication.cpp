@@ -153,7 +153,7 @@ void send_to_mqtt(data_to_send_t data_to_send){
   doc["time_stamp"] = data_to_send.time_stamp;
   doc["type"] = dataTypeToString(data_to_send.type); 
   doc["classification"] = dataClassificationToString(data_to_send.classification);
-  doc["data"] = data_to_send.data; 
+  doc["prob"] = data_to_send.prob; 
 
   char jsonBuffer[256];
   serializeJson(doc, jsonBuffer, sizeof(jsonBuffer));

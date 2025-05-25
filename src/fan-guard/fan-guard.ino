@@ -30,9 +30,9 @@ void first_boot_init(){
   for (int i = 0; i < 17; i = i + 8) {
     id_device |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
   }
-  xTaskCreatePinnedToCore(build_baseline_mpu6500, "build_basline_mpu", 4096, xTaskGetCurrentTaskHandle(), 1, NULL, 0);
-  xTaskCreatePinnedToCore(build_baseline_ina, "build_baseline_ina", 4096, xTaskGetCurrentTaskHandle(), 1, NULL, 1);
-  ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+  xTaskCreate(build_baseline_mpu6500, "build_basline_mpu", 4096, xTaskGetCurrentTaskHandle(), 1, NULL);
+  //xTaskCreatePinnedToCore(build_baseline_ina, "build_baseline_ina", 4096, xTaskGetCurrentTaskHandle(), 1, NULL, 1);
+  //ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
   ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 }
 
@@ -45,6 +45,7 @@ void setup() {
   acc_init();
   // Queues initialization
   init_shared_queues();
+  unsigned long start=millis();
 
   esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
   if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0) {
@@ -75,7 +76,7 @@ void setup() {
 
   // Enable the motion interrupt with our calculated threshold
   enable_motion_interrupt(calculated_threshold);
-  
+  Serial.printf("TOTAL TIME UP: %d",millis()-start);
   deep_sleep();
 }
 

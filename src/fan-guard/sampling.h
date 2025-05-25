@@ -8,7 +8,7 @@
 #include "freertos/task.h"  // FreeRTOS task management
 #include "driver/uart.h"    // UART driver (if used for debugging/comm)
 #include "esp_sleep.h"      // ESP-IDF deep sleep functions
-#include "shared-defs.h"    // Custom shared definitions (e.g., ina_data_t)
+#include "shared-defs.h"    // Custom shared definitions (e.g., float)
 #include "ina-library.h"    // Library for INA219 sensor functions
 #include "MPU6500-library.h" // Library for MPU6500 sensor functions
 
@@ -28,11 +28,11 @@
  *
  * @param motion_samples A pointer to an array of xyzFloat structures
  * containing motion sensor readings (e.g., accelerometer data).
- * @param ina_samples A pointer to an array of ina_data_t structures
+ * @param ina_samples A pointer to an array of float structures
  * containing INA sensor readings (e.g., power, current, voltage).
  * @return True if an anomaly is classified, false otherwise.
  */
-bool classify_anomaly(xyzFloat *motion_samples, ina_data_t *ina_samples);
+bool classify_anomaly(xyzFloat *motion_samples, float *ina_samples);
 
 /**
  * @brief Sends anomaly notification via MQTT.
@@ -45,10 +45,10 @@ bool classify_anomaly(xyzFloat *motion_samples, ina_data_t *ina_samples);
  * (Note: The original code passed float*, but motion_samples is xyzFloat*.
  * Ensure type consistency or adapt this parameter as needed.)
  * @param ina_samples A pointer to an array of float values representing INA data.
- * (Note: The original code passed float*, but ina_samples is ina_data_t*.
+ * (Note: The original code passed float*, but ina_samples is float*.
  * Ensure type consistency or adapt this parameter as needed.)
  */
-void send_anomaly_mqtt(bool anomaly_class, xyzFloat *motion_samples, ina_data_t *ina_samples);
+void send_anomaly_mqtt(bool anomaly_class, xyzFloat *motion_samples, float *ina_samples);
 
 /**
  * @brief Performs high-frequency sampling of motion and INA data.

@@ -19,13 +19,31 @@ const char* dataTypeToString(DataType type) {
 
 const char* dataClassificationToString(DataClassification classification) {
   switch (classification) {
-    case CLASS_1:    return "CLASS_1";
-    case CLASS_2: return "CLASS_2";
-    case CLASS_3:     return "CLASS_3";
-    default:                  return "unknown";
+    case CLASS_NORMAL:    return "normal";
+    case CLASS_BEARING: return "bearing";
+    case CLASS_OFF:     return "turned_off";
+    case CLASS_FLUCTUATIONS:     return "fluctuations";
+    default:                  return "uncertain";
   }
 }
 
+DataClassification stringToDataClassification(const char* classificationString) {
+  if (classificationString == nullptr) {
+    return CLASS_UNKNOWN; // Handle null input
+  }
+  if (strcmp(classificationString, "normal") == 0) {
+    return CLASS_NORMAL;
+  } else if (strcmp(classificationString, "bearing") == 0) {
+    return CLASS_BEARING;
+  } else if (strcmp(classificationString, "turned_off") == 0) {
+    return CLASS_OFF;
+  } else if (strcmp(classificationString, "fluctuations") == 0) {
+    return CLASS_FLUCTUATIONS;
+  } else if (strcmp(classificationString, "uncertain") == 0) {
+    return CLASS_UNKNOWN; 
+  }
+  return CLASS_UNKNOWN; 
+}
 
 
 void init_shared_queues() {

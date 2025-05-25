@@ -3,12 +3,12 @@
 
 xyzFloat motion_samples[SAMPLE_RATE];
 
-bool classify_anomaly(xyzFloat *motion_samples,ina_data_t *ina_samples){
+bool classify_anomaly(xyzFloat *motion_samples,float *ina_samples){
   Serial.printf("\n classify anomaly\n");
   return true;
 }
 
-void send_anomaly_mqtt(bool anomaly_class,xyzFloat *motion_samples,ina_data_t *ina_samples){
+void send_anomaly_mqtt(bool anomaly_class,xyzFloat *motion_samples,float *ina_samples){
   Serial.printf("*** Anomaly mpu sent ***");
 }
 
@@ -18,6 +18,7 @@ void high_freq_sampling(void *args){
   Serial.printf("--- SAMPLING ---\n");
   for (int i =0; i<SAMPLE_RATE; i++) {
     motion_samples[i] = my_mpu6500.getGValues();
+    
     //ina_samples[i] = read_ina_filtered();
     vTaskDelay(pdTICKS_TO_MS(1000/SAMPLE_RATE));
   }
