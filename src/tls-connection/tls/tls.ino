@@ -7,9 +7,9 @@
 #include <ArduinoJson.h>
 
 
-const char* ssid = "Angelo";
-const char* password = "Pompeo00";
-const char* mqtt_server = "192.168.210.29";
+const char* ssid = "";
+const char* password = "";
+const char* mqtt_server = "";
 const int mqtt_port = 8883;
 
 const char* ca_cert = R"EOF(
