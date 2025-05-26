@@ -23,6 +23,7 @@ const char* dataClassificationToString(DataClassification classification) {
     case CLASS_BEARING: return "bearing";
     case CLASS_OFF:     return "turned_off";
     case CLASS_FLUCTUATIONS:     return "fluctuations";
+    case CLASS_OBSTRUCTION: return "obstruction";
     default:                  return "uncertain";
   }
 }
@@ -41,6 +42,8 @@ DataClassification stringToDataClassification(const char* classificationString) 
     return CLASS_FLUCTUATIONS;
   } else if (strcmp(classificationString, "uncertain") == 0) {
     return CLASS_UNKNOWN; 
+  } else if (strcmp(classificationString, "obstruction") == 0) {
+    return CLASS_OBSTRUCTION;
   }
   return CLASS_UNKNOWN; 
 }

@@ -151,22 +151,15 @@ void send_to_mqtt(data_to_send_t data_to_send){
   StaticJsonDocument<256> doc;
 
   doc["time_stamp"] = data_to_send.time_stamp;
-  doc["type"] = dataTypeToString(data_to_send.type); 
   doc["classification"] = dataClassificationToString(data_to_send.classification);
   doc["prob"] = data_to_send.prob; 
 
   char jsonBuffer[256];
   serializeJson(doc, jsonBuffer, sizeof(jsonBuffer));
 
-  String topicStr;
-  if (data_to_send.type == TYPE_MPU) {
-    topicStr = String(id_device) + "/" + MPU_TOPIC;
-  } else {
-    topicStr = String(id_device) + "/" + INA_TOPIC;
-  }
-  const char* topic = topicStr.c_str();
-  Serial.printf("\nTopic: %s\n",topic);
-  if (client.publish(topic, jsonBuffer)){
+
+  Serial.printf("\nTopic: %s\n",TOPIC_MQTT);
+  if (client.publish(TOPIC_MQTT, jsonBuffer)){
     Serial.printf("[MQTT] Publishing: %s\n", jsonBuffer);
   }else{
     Serial.printf("[MQTT] ERROR while publishing rms: %s\n", jsonBuffer);

@@ -126,8 +126,6 @@ void build_baseline_mpu6500(void *args){
   Serial.print(calculated_threshold * 4);
   Serial.println(" mg)");
 
-
-
   xTaskNotifyGive((TaskHandle_t)args);
   vTaskDelete(NULL);
 }

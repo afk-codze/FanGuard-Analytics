@@ -32,8 +32,6 @@ void first_boot_init(){
     id_device |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
   }
   xTaskCreate(build_baseline_mpu6500, "build_basline_mpu", 4096, xTaskGetCurrentTaskHandle(), 1, NULL);
-  //xTaskCreatePinnedToCore(build_baseline_ina, "build_baseline_ina", 4096, xTaskGetCurrentTaskHandle(), 1, NULL, 1);
-  //ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
   ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 }
 
@@ -48,13 +46,15 @@ void setup() {
   init_shared_queues();
   unsigned long start=millis();
 
+
+
   esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
   if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0) {
     Serial.println("Woke up from deep sleep by MPU6500 interrupt!");
     motion_anomaly = true; // Set anomaly_motion flag if woke by interrupt
   } else if(wakeup_reason == ESP_SLEEP_WAKEUP_TIMER){
     Serial.println("Woke up from deep sleep by INA timer");
-    xTaskCreate(ina_periodic_check, "ina_periodic_check", 8096, xTaskGetCurrentTaskHandle(), 1, NULL);
+    xTaskCreate(high_freq_sampling, "high_freq_sampling", 8096, xTaskGetCurrentTaskHandle(), 1, NULL);
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
   }else{
     Serial.println("Normal boot or other wakeup reason.");
@@ -74,7 +74,6 @@ void setup() {
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
   }
   
-
   // Enable the motion interrupt with our calculated threshold
   Serial.printf("TOTAL TIME UP: %d",millis()-start);
   deep_sleep();

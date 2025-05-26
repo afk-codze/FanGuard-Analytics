@@ -56,7 +56,6 @@ extern RTC_DATA_ATTR float baseline_mean;
 // Standard deviation of power consumption during the baseline period.
 extern RTC_DATA_ATTR float baseline_std;
 // Array to store power readings during baseline establishment.
-extern float power_readings[BASELINE_SAMPLES];
 // Total number of readings taken (can be used for debugging or dynamic baseline).
 extern RTC_DATA_ATTR int total_readings;
 // Flag to indicate if it's the first reading for filter initialization.

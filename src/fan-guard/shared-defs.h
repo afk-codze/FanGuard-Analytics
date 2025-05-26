@@ -20,6 +20,7 @@ enum DataType {
 enum DataClassification {
   CLASS_NORMAL,
   CLASS_BEARING,
+  CLASS_OBSTRUCTION,
   CLASS_OFF,
   CLASS_FLUCTUATIONS,
   CLASS_UNKNOWN,
@@ -27,7 +28,6 @@ enum DataClassification {
 
 struct DATA_TO_SEND{
   unsigned long time_stamp = 0;
-  DataType type = TYPE_UNKNOWN;
   DataClassification classification = CLASS_UNKNOWN;
   float prob = 0;
 };

@@ -21,6 +21,8 @@
 
 
 void task_avg_acc(void *args);
+
+data_to_send_t classify();
 void task_flt_ina(void *args);
 
 // --- Function Prototypes ---
