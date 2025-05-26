@@ -3,6 +3,56 @@ Edge-AI predictive-maintenance node for server-rack fans
 
 ---
 
+# Table of Contents
+
+- [FanGuard - Analytics](#fanguard---analytics)
+- [Table of Contents](#table-of-contents)
+  - [👨‍💻 **Team:**](#-team)
+  - [Introduction](#introduction)
+  - [Why we chose RMS?](#why-we-chose-rms)
+      - [References:](#references)
+  - [Components \& Wiring](#components--wiring)
+  - [General software schema](#general-software-schema)
+  - [Sampling \& Communication Workflow](#sampling--communication-workflow)
+    - [Why Monitor Server Rack Fans Every 30 Seconds?](#why-monitor-server-rack-fans-every-30-seconds)
+      - [The Problem: Rapid Temperature Rise](#the-problem-rapid-temperature-rise)
+      - [Response Timeline Components](#response-timeline-components)
+      - [Monitoring Frequency Analysis](#monitoring-frequency-analysis)
+      - [Why 30 Seconds is Optimal](#why-30-seconds-is-optimal)
+      - [References](#references-1)
+  - [AI / Machine-Learning Pipeline](#ai--machine-learning-pipeline)
+    - [1. Data acquisition \& labelling](#1-data-acquisition--labelling)
+    - [2. Edge Impulse pipeline](#2-edge-impulse-pipeline)
+    - [3. Model architecture \& training script](#3-model-architecture--training-script)
+    - [4. Model performance \& accuracy](#4-model-performance--accuracy)
+  - [Power consumption: measurements](#power-consumption-measurements)
+  - [Power Consumption: analysis](#power-consumption-analysis)
+    - [Parameters](#parameters)
+    - [Calculations](#calculations)
+      - [**Scenario 1: Full Active Mode (35 seconds)**](#scenario-1-full-active-mode-35-seconds)
+      - [**Scenario 2: Hybrid Mode (5s Active + 30s Light Sleep/Sampling - Revised)**](#scenario-2-hybrid-mode-5s-active--30s-light-sleepsampling---revised)
+    - [Results](#results)
+    - [Key Insights](#key-insights)
+  - [Security Implications:](#security-implications)
+    - [Security Threats](#security-threats)
+    - [First Implementation: HMAC](#first-implementation-hmac)
+      - [Why Not TLS/SSL?](#why-not-tlsssl)
+    - [Second Implementation: TLS/SSL](#second-implementation-tlsssl)
+    - [TLS vs HMAC](#tls-vs-hmac)
+  - [Cloud Application](#cloud-application)
+    - [The Architecture](#the-architecture)
+    - [Presentation Level](#presentation-level)
+    - [Under the hood: the back end](#under-the-hood-the-back-end)
+  - [How to install and run (quick start)](#how-to-install-and-run-quick-start)
+    - [Cloud application](#cloud-application-1)
+      - [Dependencies:](#dependencies)
+      - [Environment Variables:](#environment-variables)
+      - [Running:](#running)
+    - [Arduino sketch: TODO](#arduino-sketch-todo)
+
+
+---
+
 ## 👨‍💻 **Team:**  
 - Massimiliano Vitale: [Linkedin](https://www.linkedin.com/in/massimiliano-vitale/)
 - Luca Cornici: [Linkedin](https://www.linkedin.com/in/luca-cornici-a31a822b9/)  
@@ -11,7 +61,7 @@ Edge-AI predictive-maintenance node for server-rack fans
 📹 **Project presentation video:** [FanGuard-Analytics Presentation Video](https://youtu.be/Nzetp7tr6uA)
 
 📑 **Project presentation deck:** [FanGuard-Analytics Presentation Deck](https://www.canva.com/design/DAGiGgqm3vg/dWG1Gl8j_IxVZVRmSFhmMA/view?utm_content=DAGiGgqm3vg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=ha00e9f673b) 
- 
+
 ---
 
 ## Introduction
@@ -269,6 +319,8 @@ This scenario consists of two distinct phases:
 
 ### Security Threats
 
+Our system security can be threatened during the WiFi communication between the IoT device and the MQTT broker, here we list possible types of threat:
+
 1. **Tampering**
     
     **Threat**: An attacker could modify the vibration data in transit, potentially causing:   
@@ -298,9 +350,9 @@ This scenario consists of two distinct phases:
    
     **Impact**: Outdated or irrelevant data being processed as current, leading to missed anomalies and ineffective monitoring.
 
-### Implementation
+### First Implementation: HMAC
 
-We implement Hash-based Message Authentication Code (HMAC) to ensure message integrity and authentication. This method is used at the MQTT level where each message has this format: 
+In the first version of our system we choose to implement Hash-based Message Authentication Code (HMAC) in order to ensure message integrity and authentication. This method is used at the MQTT level where each message has this format: 
 
     
     +----------------------------------------------------------------------+
@@ -308,7 +360,7 @@ We implement Hash-based Message Authentication Code (HMAC) to ensure message int
     +----------------------------------------------------------------------+
     
     
-The HMAC is calculated using:
+The HMAC is computed using:
 
     
     HMAC = Hash(SecretKey, Payload + Timestamp + SequenceNumber + SessionID)
@@ -325,7 +377,7 @@ The HMAC is calculated using:
 
 - **Session ID**: Unique identifier generated when the device is programmed and increase whenever the device restarts. A session terminate when an operator restart the device subsequently an anomaly.
 
-### Why Not TLS/SSL?
+#### Why Not TLS/SSL?
 
 - **HMAC** is significantly lighter:
     - TLS handshakes are computationally expensive, requiring asymmetric cryptography
@@ -338,33 +390,32 @@ The HMAC is calculated using:
 
 - **Lower Network Overhead** HMAC reduces bandwidth requirements: TLS adds significant overhead to each packet
 
----
+### Second Implementation: TLS/SSL
 
-## Using TLS/SSL
-
-After our preliminary assessment about using HMAC over a TLS connection to secure our system communication we performed tests to evaluate with solid data the actual performances of the two different approaches and then use this inormation to drive our choice into securing the connection. \\
+After our preliminary assessment about using HMAC over a TLS connection to secure our system communication we performed tests to evaluate with solid data the actual performances of the two different approaches and then use this information to drive our choice into securing the connection.
 Performances though cannot be the only factor to take into consideration when choosing a security mechanism, other important factors are:
 
 * Security guarantees
 * Complexity
 * Interoperatibility
 
-In this paragraph we will briefly compare the two security mechanisms and then contextualize them into our system, also taking into account how our system has evolved from its previous version . \\
+In this paragraph we will briefly compare the two security mechanisms and then contextualize them into our system, also taking into account how our system has evolved from its previous version . 
 
 ### TLS vs HMAC
 
 In the first version of our system we needed to send continously every 30 seconds data packets to the mqtt broker, then the cloud application consumed the messages from the broker and validated the messages's HMAC locally using the shared symmetric key with the esp32 board. The system design required lightweight secured messages to prevent attacks happening during the WIFi communication of 
-data packets from the board to the nearest access point, the solution we used did not ensure the confidentiality of the data but only its integrity and authenticity; this trade-off was considered acceptable as the transmitted data did not contain sensible or valuable information for anyone other than a human operator tasked with the maintenance of the system. \\
-What HMAC introduced was a lightweight security solution that added computational stress and configuration management onto the cloud application.\\
+data packets from the board to the nearest access point, the solution we used did not ensure the confidentiality of the data but only its integrity and authenticity; this trade-off was considered acceptable as the transmitted data did not contain sensible or valuable information for anyone other than a human operator tasked with the maintenance of the system. \
+What we thought HMAC introduced was a lightweight security solution that added computational stress and configuration management onto the cloud application.
 
-After a review of the system work we transistioned to a different approach by sending to the cloud only relevant information about the detected anomalies, this change in the system behaviour brought
-many improvements, one of these is reducing the frequency of trasnmissions to the broker, by sending less packets less frequently we could switch the system security to a TLSc1.2 connection, a mechanism we found simpler to implement, that increased the security guarantees of the system. \\
+After a review of the system work we transitioned to a different approach by sending to the cloud only relevant information about the detected anomalies, this change in the system behaviour brought many improvements, one of these is reducing the frequency of trasnmissions to the broker, by sending less packets less frequently we could switch the system security to a TLSv1.2 connection, a mechanism we found simpler to implement, that increased the security guarantees of the system by providing confidentiality,integrity and authenticity of the messages. 
 
-Here belowe we show a diagram showing the differences in transmission times between HMAC and TLS:
+After this evaluation we perfomed tests to analyze the real performances of the two approaches and what we found was quite unexpected. 
 
----picture---
+![alt text](src/tls-connection/graph_scripts/average_hmac_vs_tls_comparison.png)
 
+In the picture above we can see the results of our tests, by considering only the performance aspect, TLS revealed to be faster than HMAC and this is likely due to the fact that the computation step of the hmac for each message slws down the communication step, also we would like to point out that in these results we do not take into consideration that the hmac must be verified at the receiving end, i.e. the cloud application thus adding complexity a computational overhead in another point of the system.
 
+---
 
 ## Cloud Application
 

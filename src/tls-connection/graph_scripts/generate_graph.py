@@ -2,31 +2,33 @@ import matplotlib.pyplot as plt
 import csv
 
 # Read HMAC data
-hmac_x = []
-hmac_y = []
-with open("hmac_transmission_times.csv", mode="r") as file:
+hmac_times = []
+with open("./csv_data/hmac_transmission_times.csv", mode="r") as file:
     reader = csv.reader(file)
     next(reader)  # Skip header
     for row in reader:
-        hmac_x.append(int(row[0]))
-        hmac_y.append(float(row[1]))
+        hmac_times.append(float(row[1]) / 1000)  # Convert microseconds to milliseconds
 
 # Read TLS data
-tls_x = []
-tls_y = []
-with open("tls_transmission_times.csv", mode="r") as file:
+tls_times = []
+with open("./csv_data/tls_transmission_times.csv", mode="r") as file:
     reader = csv.reader(file)
     next(reader)  # Skip header
     for row in reader:
-        tls_x.append(int(row[0]))
-        tls_y.append(float(row[1]))
+        tls_times.append(float(row[1]) / 1000)  # Convert microseconds to milliseconds
 
-# Plot the data
-plt.plot(hmac_x, hmac_y, label="HMAC", color="blue")
-plt.plot(tls_x, tls_y, label="TLS", color="red")
-plt.title("HMAC vs TLS Transmission Times")
-plt.xlabel("Transmission Count")
-plt.ylabel("Transmission Time (ms)")
-plt.legend()
-plt.savefig("final_hmac_vs_tls_comparison.png")
+# Calculate averages
+hmac_avg = sum(hmac_times) / len(hmac_times) if hmac_times else 0
+tls_avg = sum(tls_times) / len(tls_times) if tls_times else 0
+
+# Data for the bar graph
+labels = ["HMAC", "TLS"]
+averages = [hmac_avg, tls_avg]
+
+# Create a horizontal bar graph
+plt.barh(labels, averages, color=["blue", "red"])
+plt.title("Average Transmission Times: HMAC vs TLS")
+plt.xlabel("Average Transmission Time (ms)")
+plt.ylabel("Transmission Type")
+plt.savefig("average_hmac_vs_tls_comparison.png")
 plt.show()

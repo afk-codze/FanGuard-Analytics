@@ -47,7 +47,7 @@ while True:
         serial_data = serialInst.readline().decode('utf-8').rstrip()
         if "Connecting to WiFi..." in serial_data:
             print("ESP32 is connecting to WiFi...")
-        if "HMAC Transmission Time(ms):" in serial_data:
+        if "HMAC Transmission Time:" in serial_data:
             time = float(serial_data.split(": ")[1].strip())
             hmac_times.append(time)
             hmac_x_points.append(len(hmac_times))  # Increment x-axis point
@@ -61,7 +61,7 @@ while True:
             plt.draw()
             plt.pause(0.01)
 
-        elif "TLS Transmission Time(ms):" in serial_data:
+        elif "TLS Transmission Time:" in serial_data:
             time = float(serial_data.split(": ")[1].strip())
             tls_times.append(time)
             tls_x_points.append(len(tls_times))  # Increment x-axis point

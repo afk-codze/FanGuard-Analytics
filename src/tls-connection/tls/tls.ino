@@ -2,6 +2,10 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <PubSubClient.h>
+#include "shared-defs.h"
+#include "communication.h"
+#include <ArduinoJson.h>
+
 
 const char* ssid = "Angelo";
 const char* password = "Pompeo00";
@@ -57,12 +61,71 @@ lys9WHQlq2kuyLQZaYfQ+3dQifRA0bRljY0Kz3Bj0xCBHmU1mE8a2sxeIqptapFy
 -----END CERTIFICATE-----
 )EOF";
 
+#define TLS 1 // 0 for HMAC 1 for TLS
+
+#if TLS == 1
 WiFiClientSecure wifiClient;
+#else
+WiFiClient wifiClient;
+#endif 
+
 PubSubClient client(wifiClient);
 
-#define TLS 0 // 0 for HMAC 1 for TLS
 
 unsigned long handshake_start;
+
+
+
+bool prepare_signed_json(data_to_send_t data_to_send, char* json_buffer, size_t buffer_size) {
+  // Create a JSON document for the payload
+  StaticJsonDocument<200> doc;
+  
+  // Add sensor data
+  if(data_to_send.anomaly)
+    doc["status"] = "ANOMALY";
+  
+  doc["x"] = data_to_send.rms_array[0];
+  doc["y"] = data_to_send.rms_array[1];
+  doc["z"] = data_to_send.rms_array[2];
+  
+  // Prepare authentication data
+  auth_data_t auth;
+  auth.session_id = g_session_id;
+  auth.seq_number = get_next_sequence_number();
+  auth.timestamp = data_to_send.time_stamp;
+  
+  // Add authentication data to JSON
+  doc["session_id"] = auth.session_id;
+  doc["seq"] = auth.seq_number;
+  doc["time"] = auth.timestamp;
+  
+  // Serialize the JSON document to a temporary buffer for HMAC calculation
+  char temp_buffer[200];
+  size_t json_len = serializeJson(doc, temp_buffer, sizeof(temp_buffer));
+  
+  // Calculate HMAC
+  uint8_t hmac_result[HMAC_OUTPUT_LENGTH];
+  if (!calculate_hmac(temp_buffer, json_len, &auth, hmac_result)) {
+    Serial.println("[AUTH] Failed to calculate HMAC");
+    return false;
+  }
+  
+  // Convert HMAC to hex string
+  char hmac_hex[HMAC_OUTPUT_LENGTH * 2 + 1];
+  hmac_to_hex_string(hmac_result, hmac_hex);
+  
+  // Add HMAC to JSON document
+  doc["hmac"] = hmac_hex;
+  
+  // Serialize the final JSON with HMAC
+  size_t final_len = serializeJson(doc, json_buffer, buffer_size);
+  if (final_len >= buffer_size - 1) {
+    Serial.println("[AUTH] JSON buffer too small");
+    return false;
+  }
+  
+  return true;
+}
 
 void send_mqtt(){
 
@@ -77,17 +140,34 @@ void send_mqtt(){
         
 
 
-        unsigned long handshake_end = micros();
         #if TLS == 1
             client.publish("test/topic", "{\"status\":\"ANOMALY\",\"x\":0.266646,\"y\":1.059339,\"z\":0.406033,\"session_id\":10,\"seq\":1,\"time\":3484}");
             Serial.print("TLS Transmission Time: ");
         #endif
 
         #if TLS == 0
-            client.publish("test/topic", "{\"status\":\"ANOMALY\",\"x\":0.266646,\"y\":1.059339,\"z\":0.406033,\"session_id\":10,\"seq\":1,\"time\":3484}");
+            char json_buffer[256];  // Ensure the buffer is large enough for your JSON payload
+
+                // Create and populate a data_to_send_t instance
+                data_to_send_t data_to_send;
+                data_to_send.time_stamp = 123456789;  // Example timestamp
+                data_to_send.rms_array = new float[3]{1.23, 4.56, 7.89};  // Example RMS values
+                data_to_send.anomaly = true;  // Example anomaly flag
+
+                // Call the function
+                if (prepare_signed_json(data_to_send, json_buffer, sizeof(json_buffer))) {
+                    Serial.println("[JSON] Successfully prepared JSON:");
+                    Serial.println(json_buffer);  // Print the resulting JSON
+                } else {
+                    Serial.println("[JSON] Failed to prepare JSON");
+                }
+
+            client.publish("test/topic", json_buffer);
             Serial.print("HMAC Transmission Time: ");
         #endif
 
+        
+       unsigned long handshake_end = micros();
         Serial.println(handshake_end - handshake_start);
     } else {
         Serial.println("Failed to connect");

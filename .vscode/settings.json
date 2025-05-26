@@ -1,0 +1,11 @@
+{
+  "files.associations": {
+    "stdio.h": "c",
+    "e1.h": "c",
+    "stdbool.h": "c",
+    "stdlib.h": "c",
+    "system_error": "c",
+    "random": "c",
+    "cstdint": "cpp"
+  }
+}
