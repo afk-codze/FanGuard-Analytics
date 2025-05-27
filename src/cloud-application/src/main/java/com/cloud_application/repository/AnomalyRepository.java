@@ -20,4 +20,7 @@ public interface AnomalyRepository extends JpaRepository<Anomaly, Long> {
             "and w.devId = :devId "+
             "order by timestamp desc")
     List<Anomaly> findTop10ByTimeRangeDesc(@Param("devId") String devId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    @Query(value = "SELECT DISTINCT dev_id FROM anomaly", nativeQuery = true)
+    List<String> findAllDistinctDeviceIds();
 }

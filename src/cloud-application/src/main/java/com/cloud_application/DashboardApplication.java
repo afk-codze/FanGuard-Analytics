@@ -1,7 +1,6 @@
 package com.cloud_application;
 
 import com.cloud_application.subscription.SubscriptionHandler;
-import com.cloud_application.verifier.HmacVerifier;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -51,8 +50,8 @@ public class DashboardApplication {
     public MessageProducer inbound() {
 
         MqttPahoMessageDrivenChannelAdapter adapter =
-                new MqttPahoMessageDrivenChannelAdapter("tcp://broker.emqx.io:1883", "testClient", mqttClientFactory(),
-                        "+/RMS", "+/anomalies");
+                new MqttPahoMessageDrivenChannelAdapter("tcp://localhost:1883", "testClient", mqttClientFactory(),
+                         "+/anomalies");
         adapter.setCompletionTimeout(5000);
         adapter.setConverter(new DefaultPahoMessageConverter());
         adapter.setQos(1);

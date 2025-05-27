@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.custom_button {
+    @apply inline-flex justify-center  m-4 rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-slate-600 text-sm font-medium text-gray-100 hover:bg-slate-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500;
+}
+
+
+.custom_pre {
+    @apply m-0 p-1 bg-white border-4 border-solid ;
+}
+
+.navbar-title {
+    @apply font-sans font-semibold text-slate-700;
+}
+
+.navbar-links a {
+    @apply font-sans font-semibold text-slate-700 ml-20 ;
+}
+
+
+.navbar-links a:hover{
+    @apply underline
+}
+
+.navbar {
+    @apply bg-[#d89d3f] fixed top-0 left-0 w-full z-50 transition-shadow shadow-gray-400 rounded m-0.5 shadow-sm
+}
+
+.time-selector{
+    @apply col-span-1 shadow-lg shadow-gray-400 ring-1 w-1/2 ring-black ring-opacity-5 m-2 p-2 rounded  ;
+}
+
+.label-time{
+    @apply w-auto justify-self-center ;
+}
+
+.container {
+    @apply w-11/12 justify-self-center p-[20px] bg-opacity-5 rounded;
+}
