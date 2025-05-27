@@ -8,6 +8,7 @@
 #include "shared-defs.h"
 #include <esp_wifi.h>
 #include <esp_wifi_types.h>
+#include <WiFiClientSecure.h>
 // MQTT Client declaration
 extern PubSubClient client;
 
