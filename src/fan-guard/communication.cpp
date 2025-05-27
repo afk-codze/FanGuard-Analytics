@@ -23,7 +23,7 @@
 
 /* Global Variables --------------------------------------------------------- */
 
-WiFiClient espClient;        // WiFi client instance
+WiFiClientSecure espClient;        // WiFi client instance
 PubSubClient client(espClient);  // MQTT client instance
 
 char msg[MSG_BUFFER_SIZE];   // Buffer for MQTT messages
@@ -107,6 +107,7 @@ void connect_mqtt() {
   long r = random(1000);
   sprintf(clientId, "%d", id_device);
   Serial.printf("\n[MQTT] Connecting to %s\n", MQTT_SERVER);
+  client.setCACert(CA_CERT);
   client.setServer(MQTT_SERVER, MQTT_PORT);
   client.setSocketTimeout(60);
   client.setKeepAlive(60);
