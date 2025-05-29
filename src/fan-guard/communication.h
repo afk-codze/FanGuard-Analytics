@@ -6,9 +6,9 @@
 #include "freertos/task.h"
 #include "config.h"
 #include "shared-defs.h"
-#include "hmac.h"
 #include <esp_wifi.h>
 #include <esp_wifi_types.h>
+#include <WiFiClientSecure.h>
 // MQTT Client declaration
 extern PubSubClient client;
 
@@ -27,6 +27,7 @@ void connect_mqtt(void *arg);
 //void callback(char* topic, byte* message, unsigned int length);
 void send_to_mqtt(data_to_send_t data_to_send);
 
+void send_anomaly_mqtt(data_to_send_t ina_anomaly);
 // Task handlers
 void communication_mqtt_task(void *pvParameters);
 

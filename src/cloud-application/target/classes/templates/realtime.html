@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Monitoring System</title>
+    <link rel="stylesheet" th:href="@{/css/output.css}">
+    <link rel="stylesheet" th:href="@{/css/basic.css}">
+
+    <script type="text/javascript" th:src="@{/js/node_modules/chart.js/dist/chart.umd.js}"></script>
+    <script th:src="@{/js/node_modules/jquery/jquery.min.js}"></script>
+    <script th:src="@{/js/node_modules/datatables.net/dataTables.min.js}"></script>
+    <link rel="stylesheet" th:href="@{/js/node_modules/datatables.net-dt/css/dataTables.dataTables.min.css}">
+
+</head>
+
+<body class="bg-gray-100 grid">
+
+<div class="navbar mb-20 " id="navbar">
+    <div class="navbar-content">
+        <div class="navbar-title">Monitoring System</div>
+        <div class="navbar-links">
+            <a th:href="@{/}">Realtime Graph</a>
+            <a th:href="@{/log}">Log</a>
+        </div>
+    </div>
+</div>
+
+<div class="container"></div>
+<div class="w-1/2 justify-self-center">
+    <form id="realtime_submit"
+          class="m-10 shadow-lg ring-1 ring-black ring-opacity-5 rounded-md place-content-evenly bg-white">
+
+        <p class="m-6 text-center font-sans font-medium break-keep">
+            Welcome to our server monitoring system, here you can monitor your server fan health status.<br>
+            Click on submit to start generating the realtime graph about how much power (mW) is the fan consuming.<br>
+            And the current axes vibration<br>
+            You will also be provided with a log of all the anomalies reported, updated in realtime as well!
+        </p>
+
+
+
+
+        <!-- Buttons -->
+        <div class="mt-4 w-3/4 col-span-2 grid grid-cols-2">
+
+            <!-- Device ID Selector -->
+            <div class="mt-4 p-4 w-1/2 flex col-span-2 justify-self-center border rounded-md border-gray-300 bg-slate-600">
+                <label for="deviceId" class="block text-sm font-medium text-white mb-2">Select Device ID</label>
+                <select id="deviceId" name="deviceId"
+                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 px-4">
+                    <option value="" disabled selected>Select a device</option>
+                    <th:block th:each="deviceId : ${deviceIds}">
+                        <option th:value="${deviceId}" th:text="${deviceId}" class="text-indigo-600 px-4 justify-self-center"></option>
+                    </th:block>
+                </select>
+            </div>
+
+
+            <div class="mt-4 w-1/2 justify-self-center">
+                <button id="submit" class="custom_button">Submit</button>
+            </div>
+            <div class="mt-4 w-1/2 justify-self-center">
+                <button id="reset" class="custom_button">Reset</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+
+<div class=" gap-10 w-full justify-self-center ">
+
+    <div class=" w-11/12 p-5  justify-self-center rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+        <table id="anomalies_table" class="table-auto text-center w-full border-separate rounded" data-currentpage="1">
+            <thead class="font-mono bg-slate-600 text-white text-center">
+
+
+            </thead>
+
+        </table>
+    </div>
+
+
+    <div class="h-20 m-10"> </div>
+</div>
+
+
+<script type="application/javascript" th:src="@{js/aux.js}"></script>
+<script type="application/javascript" th:src="@{js/realtime.js}"></script>
+</body>
+
+</html>

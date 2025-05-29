@@ -6,93 +6,39 @@ import java.io.IOException;
 
 public class SensorData {
 
-    @JsonProperty(value = "status",required = false)
-    private String status;
+    @JsonProperty(value = "time_stamp",required = false)
+    private String time_stamp;
 
-    @JsonProperty("x")
-    private double x;
 
-    @JsonProperty("y")
-    private double y;
+    @JsonProperty(value = "classification",required = false)
+    private String classification;
 
-    @JsonProperty("z")
-    private double z;
 
-    @JsonProperty("session_id")
-    private int sessionId;
+    @JsonProperty(value = "prob",required = false)
+    private Double prob;
 
-    @JsonProperty("seq")
-    private int seq;
-
-    @JsonProperty("time")
-    private long time;
-
-    @JsonProperty("hmac")
-    private String hmac;
-
-    // Getters and Setters
-    public String getStatus() {
-        return status;
+    public String getTime_stamp() {
+        return time_stamp;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public void setTime_stamp(String time_stamp) {
+        this.time_stamp = time_stamp;
     }
 
-    public double getX() {
-        return x;
+    public String getClassification() {
+        return classification;
     }
 
-    public void setX(double x) {
-        this.x = x;
+    public void setClassification(String classification) {
+        this.classification = classification;
     }
 
-    public double getY() {
-        return y;
+    public Double getProb() {
+        return prob;
     }
 
-    public void setY(double y) {
-        this.y = y;
-    }
-
-    public double getZ() {
-        return z;
-    }
-
-    public void setZ(double z) {
-        this.z = z;
-    }
-
-    public int getSessionId() {
-        return sessionId;
-    }
-
-    public void setSessionId(int sessionId) {
-        this.sessionId = sessionId;
-    }
-
-    public int getSeq() {
-        return seq;
-    }
-
-    public void setSeq(int seq) {
-        this.seq = seq;
-    }
-
-    public long getTime() {
-        return time;
-    }
-
-    public void setTime(long time) {
-        this.time = time;
-    }
-
-    public String getHmac() {
-        return hmac;
-    }
-
-    public void setHmac(String hmac) {
-        this.hmac = hmac;
+    public void setProb(Double prob) {
+        this.prob = prob;
     }
 
     // Serializer & Deserializer using Jackson

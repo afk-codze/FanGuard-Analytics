@@ -49,4 +49,8 @@ public class AnomalyService {
         return sortAnomalies(maxAnomalies, powerAnomalies);
 
     }
+
+    public List<String> getAllDeviceIds() {
+        return anomalyRepository.findAllDistinctDeviceIds();
+    }
 }
