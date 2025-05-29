@@ -1,0 +1,14 @@
+/home/angelo/Code/VoltSky-Analytics/src/cloud-application/src/main/java/com/cloud_application/DashboardApplication.java
+/home/angelo/Code/VoltSky-Analytics/src/cloud-application/src/main/java/com/cloud_application/controller/DashboardController.java
+/home/angelo/Code/VoltSky-Analytics/src/cloud-application/src/main/java/com/cloud_application/controller/RestApiController.java
+/home/angelo/Code/VoltSky-Analytics/src/cloud-application/src/main/java/com/cloud_application/dto/SensorData.java
+/home/angelo/Code/VoltSky-Analytics/src/cloud-application/src/main/java/com/cloud_application/model/Anomaly.java
+/home/angelo/Code/VoltSky-Analytics/src/cloud-application/src/main/java/com/cloud_application/model/Power.java
+/home/angelo/Code/VoltSky-Analytics/src/cloud-application/src/main/java/com/cloud_application/model/RMS.java
+/home/angelo/Code/VoltSky-Analytics/src/cloud-application/src/main/java/com/cloud_application/repository/AnomalyRepository.java
+/home/angelo/Code/VoltSky-Analytics/src/cloud-application/src/main/java/com/cloud_application/repository/PowerRepository.java
+/home/angelo/Code/VoltSky-Analytics/src/cloud-application/src/main/java/com/cloud_application/repository/RmsRepository.java
+/home/angelo/Code/VoltSky-Analytics/src/cloud-application/src/main/java/com/cloud_application/service/AnomalyService.java
+/home/angelo/Code/VoltSky-Analytics/src/cloud-application/src/main/java/com/cloud_application/service/PowerService.java
+/home/angelo/Code/VoltSky-Analytics/src/cloud-application/src/main/java/com/cloud_application/service/RmsService.java
+/home/angelo/Code/VoltSky-Analytics/src/cloud-application/src/main/java/com/cloud_application/subscription/SubscriptionHandler.java

@@ -419,10 +419,9 @@ In the picture above we can see the results of our tests, by considering only th
 
 ## Cloud Application
 
-The last component of our system is the cloud, this is the final destination of the data gathered and computed by the sensors in order to make this data usable and readable by human operators through a web application. 
-Thanks to this tool an operator can achieve  a global view of the servers fans health status also they can  monitor the situation in realtime and respond quickly to anomalous situations. 
+The last component of our system is the cloud, here we host an application used to display the anomalies detected by the IoT devices, the anomalies are displayed both in real time and also through the log.
 
-![image](https://github.com/user-attachments/assets/78cf1217-ee41-4ce5-a18b-50fab6d62c78)
+![alt text](src/cloud-application/cloud-app.png)
 
 ### The Architecture
 
@@ -436,12 +435,8 @@ In this section we give an overview of the structure and the technologies used f
 
 ### Presentation Level
 
-In the presentation video that you can find at this link: link, you can see how the application works from the presentation level:
-
-There are 2 pages that can be access through the navbar placed on the top, the first page that is also the index of the application is called __realtime graphs__ in this page you can select an IoT device and then click the Submit button, at this point 4 graphs will be generated for you, these graphs are realtime so they are periodically updated with the new data coming from the IoT devices. \
-The graphs generated show the power levels measured in mW and the vibration on the 3 axes measured in g, each value is timestamped with the time it was received by the cloud application, in order to make it more readable and easy to understand this timestamp has been processed in order to be shown in terms hours,minutes and seconds.\
-On the right side of the page there is also a table that shows  the last 10 most recent anomalies detected by the system. \
-The second page called __log__ is very similar to the first one, the functionalities are the same, but here the graphs are not realtime and by using time selectors the operator can choose a time interval of interest of which to generate the graphs and the anomalies table.
+The application is composed of two pages: realtime and Log. In the first page a use can select the interested device to monitor and in realtime the application will show the anomalies detected.\
+The log page gives the user a way to access information about anomalies detected in a specific time period.
 
 ### Under the hood: the back end
 
@@ -451,9 +446,8 @@ The back end of the application as stated in the previous paragraph uses Java Sp
   * __View__: From a api call to the proper url it returns the html and javascript code to render the web page.
   * __Controller__: Manages interaction between Model and View, there is a controller that manages API calls from javscript code to retrieve information from the DB and a controller that manages the web pages routing.
 
-At startup the application connects to the MQTT broker and subscribes to the interested topics, when a new message written in json fromat comes from the IoT devices into the broker, the application consumes it from it, this message is then parsed into a DTO (Data Transfer Object) using a JSON serializer and then stored on the database. \
-As stated before the application uses javascript at the presentation level to handle the graph generation and other graphicacl functionalities, the data needed to fill the graphs is retrieved from the backend through an ajax request that is handled by a back end controller which processes the request, interacts with the DB to retrieve the data , process it into a service class and finally returns it as response.\
-Notice that before storing the data retrieved from the MQTT broker the system verifies the hmac contained in the message, if it is not valid the message is dropped, this security mechanism is used to prevent possible replay attacks.
+At startup the application connects to the MQTT broker and subscribes to the interested topics, when a new message written in json format comes from the IoT devices into the broker, the application consumes it from it, this message is then parsed into a DTO (Data Transfer Object) using a JSON serializer and then stored in the database. \
+
 
 ---
 
