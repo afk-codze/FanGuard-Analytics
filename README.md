@@ -126,7 +126,7 @@ By combining the real-time, synchronized data from both sensors, our system gain
 ## General software schema
 
 
-![program diagram](https://github.com/user-attachments/assets/947970a3-13ba-4492-8e88-5294935c95e6)
+![program diagram1](https://github.com/user-attachments/assets/1fabaa59-290c-4e59-871d-71bc5545c7c8)
 
 
 ## Program phases
