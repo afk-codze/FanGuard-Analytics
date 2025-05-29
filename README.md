@@ -224,38 +224,54 @@ This section provides a graphical demonstration and intuitive understanding of h
 | **System Off** | 0 | ~0.05 | ~1.09 | ~0.05 | No power consumption |
 
 ## AI / Machine-Learning Pipeline
-This project blends classic condition-monitoring features with a tiny neural-network so that **FanGuard can spot abnormal vibration signatures in real-time—without cloud round-trips**. We collect raw samples from the MPU6050 ant then calculate RMS , label them as *normal* or *anomaly*, and train a compact INT8-quantised Keras model in Edge Impulse. Once flashed, the model executes inside TensorFlow Lite Micro on the ESP32.
+FanGuard combines motion and power analysis to detect anomalies in server-rack fans, running entirely on-device with no cloud dependency. By leveraging both vibration (MPU6500) and power consumption (INA219), the system achieves richer condition monitoring and fewer false positives. This hybrid approach allows for earlier detection of issues like bearing wear or airflow obstruction, even when vibrations are subtle.
+
+We preprocess the raw sensor signals to compute RMS values for motion axes and average power, then classify patterns using a compact neural network trained in Edge Impulse and deployed on ESP32 with TensorFlow Lite Micro.
 
 ### 1. Data acquisition & labelling  
-| Parameter | Value |
-|-----------|-------|
-| **Sampling source** | ESP32 → MPU6050|
-| **On-device pre-proc.** | calculation of **RMS** for each sample|
-| **Export format** | CSV (`timestamp, rms_x, rms_y, rms_z, label`) |
-| **Labels** | `normal`, `anomaly` |
-| **Dataset size** | 300 samples → 80 % train / 20 % test |
+| Parameter           | Value                                                  |
+| ------------------- | ------------------------------------------------------ |
+| Sampling source     | ESP32 → MPU6500 (motion), INA219 (power)               |
+| On-device pre-proc. | RMS (x/y/z) + averaged power (mW)                      |
+| Labels              | `bearing`, `fluctuations`,`normal`,`obstruction`,`off` |
+| Dataset size        | 470 samples → 80% train / 20% test                     |
+
 
 > 📄 *Code reference*: [src/ml-model/dataset-builder.ino](src/ml-model/dataset-builder.ino)
 
 ### 2. Edge Impulse pipeline  
-- **Features**: a **Time Series (3)** block consuming the pre-computed `rmse_x`, `rmse_y`, and `rmse_z` inputs.  
-- **Learning**: a **Classification** block running our custom Keras classifier (see next section).  
+- **Input Block**: 4 Axes:`rms_x`, `rms_y`, `rms_z`, `pw` inputs.  Window size: 270ms, Stride: 100ms, Frequency: 50Hz
+- **Classifier Block**: Fully-connected network for multi-class classification.  
 - **Deployment**: export as a **Quantized (INT8)** model using the **EON™ Compiler**.  
 
-![image](https://github.com/user-attachments/assets/741104b7-36f9-418d-8c5b-dc868c61cabc)
+![image](https://github.com/user-attachments/assets/de435774-5184-4940-a215-b63cdd7c559f)
 
 ### 3. Model architecture & training script  
 
-We extract per‐axis RMS features from the accelerometer and feed them into a compact, fully‐connected neural network for anomaly detection. After standard normalization, two hidden layers with regularization and dropout learn to distinguish “normal” vs. “anomalous” motion patterns. Training uses the Adam optimizer with configurable hyperparameters and early stopping to ensure robust, lightweight inference.
+The model accepts four features (3-axis RMS + power) and uses a shallow dense neural network for classification:
+Input layer: 4 features
+Dense Layer 1: 16 neurons
+Dense Layer 2: 8 neurons
+Output Layer: 5 classes
+
+Training configuration:
+
+Epochs: 150
+Batch size: 32
+Optimizer: Adam
+Learning rate: 0.01
+Auto class balancing: Enabled
+INT8 quantization: Supported
+
 
 > 📄 *Code reference*: [src/ml-model/keras-model.py](src/ml-model/keras-model.py)
 
 ### 4. Model performance & accuracy
-The INT8-quantised classifier exhibits high confidence and generalisation on the held-out validation set, making it well-suited for real-time anomaly detection on the ESP32. Below are the core metrics, confusion breakdown, and a 2D feature-space view that together demonstrate both sensitivity to early-warning vibration signatures and robustness against false positives.
+The model achieves high classification accuracy and excellent separation between classes.
 
-![image](https://github.com/user-attachments/assets/6c57be19-5882-441f-b7fd-5f7a157d0461)
+![image](https://github.com/user-attachments/assets/90af7a80-4ad4-4136-98d5-9dbea0aca8b8)
 
-![image](https://github.com/user-attachments/assets/e671bf9f-79bd-4937-940e-1f448ccc12e2)
+![image](https://github.com/user-attachments/assets/f4d42500-ff55-4b6e-8d8c-c5e9666b8bc1)
 
 ---
 
