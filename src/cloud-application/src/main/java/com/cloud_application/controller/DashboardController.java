@@ -1,5 +1,6 @@
 package com.cloud_application.controller;
 
+import com.cloud_application.service.AnomalyService;
 import com.cloud_application.service.PowerService;
 import com.cloud_application.subscription.SubscriptionHandler;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,11 +17,13 @@ public class DashboardController{
     SubscriptionHandler subscriptionHandler;
     @Autowired
     private PowerService powerService;
+    @Autowired
+    private AnomalyService anomalyService;
 
     @GetMapping( "/")
     public String realtime(Model model) {
 
-        List<String> deviceIds = powerService.getAllDeviceIds();
+        List<String> deviceIds = anomalyService.getAllDeviceIds();
         model.addAttribute("deviceIds", deviceIds);
         return "realtime";
     }
@@ -28,7 +31,7 @@ public class DashboardController{
     @GetMapping( "/log")
     public String log(Model model) {
 
-        List<String> deviceIds = powerService.getAllDeviceIds();
+        List<String> deviceIds = anomalyService.getAllDeviceIds();
         model.addAttribute("deviceIds", deviceIds);
         return "log";
     }

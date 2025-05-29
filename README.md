@@ -97,92 +97,175 @@ The hardware stack is deliberately minimal: a single **ESP32** sits at the centr
 ![image](https://github.com/user-attachments/assets/a7bb1680-b0de-464d-b349-77e5cd47bde8)
 
 ---
+
+## How we detect anomalies
+
+This project implements an intelligent IoT system designed to **detect anomalies in a fan's operation**, ensuring efficient performance and preventing critical failures. By leveraging two distinct sensor types, our solution offers a comprehensive and robust monitoring approach.
+
+### MPU6500: Catching Physical & Catastrophic Anomalies
+
+The **MPU6500 (accelerometer)** is tasked with identifying **physical, fast, and potentially catastrophic anomalies**. During an initial setup phase, the system establishes a **baseline** of normal fan vibration and movement. If the MPU6500 detects acceleration exceeding a predetermined threshold from this baseline, it immediately flags an anomaly.
+
+### INA219: Monitoring Power-Related & Developing Anomalies
+
+The **INA219 (power monitor)** continuously analyzes the **fan's power consumption**. Every **two minutes**, the system processes this data to identify deviations from normal power draw. This approach is ideal for detecting **power-related issues that tend to develop over time**, such as:
+
+* **Bearing Degradation**: As bearings wear out, the fan might draw more power due to increased friction. This indicates a gradual decline in efficiency.
+* **Power Fluctuations**: Inconsistent power usage can signal electrical problems or an intermittently struggling motor.
+* **Shutdown**: A complete loss of power consumption is detected instantly, indicating the fan has stopped running entirely.
+
+---
+
+## Why Our Solution is Good: Comprehensive & Proactive Monitoring
+
+### Comprehensive Anomaly Coverage
+By combining the MPU6500 and INA219, our system achieves **comprehensive anomaly detection**. The MPU6500 handles immediate physical threats, while the INA219 monitors for developing power-related issues. This dual approach ensures that few, if any, critical fan problems go unnoticed.
+
+### Intelligent Risk-Priority Analysis
+We've implemented a clear **risk-priority analysis** for power-related anomalies:
+
+1.  **Fan OFF (Highest Risk)**: This is the most critical event as it implies a complete loss of cooling, demanding immediate attention.
+2.  **Current Fluctuations (Medium Risk)**: While not immediately catastrophic, these indicate reduced cooling efficiency and potential underlying electrical problems that need to be addressed.
+3.  **Bearing Degradation (Lowest Risk)**: This is a gradual issue leading to performance decline, allowing more time for scheduled maintenance.
+
+### Optimal Detection Timing & Built-in Safety Margin
+Our choice of a **2-minute check interval for the INA219** is carefully considered. Among power anomalies, a **fan shutdown is the most severe**. This 2-minute interval ensures that we detect a complete fan stoppage very quickly.
+
+Crucially, this design also incorporates a robust safety measure against potential overheating. Given a **5-minute critical temperature constraint** for the system the fan is cooling, our worst-case detection delay (2 minutes) leaves a significant **3-minute safety margin**. This valuable time allows for:
+* **Alert processing and transmission** to relevant personnel.
+* **Human response time** for assessment.
+* **Activation of emergency cooling** or other mitigation strategies.
+
+This **proactive safety engineering practice** ensures that we don't just detect problems, but we detect them with enough lead time to prevent escalation into critical system failures.
+
+---
+
+
+## Sampling frequency
+
+This system leverages two primary sensors: the MPU-6500 and the INA219, working in parallel to provide a comprehensive understanding of system behavior.
+
+**1. MPU-6500 for High-Frequency Anomaly Detection (Motion and Vibration)**
+
+* **Purpose:** We utilize the MPU-6500 with **motion interrupts** to detect anomalies related to **motion, vibration, and orientation changes**. This is crucial for identifying sudden mechanical issues, sudden impacts, or unusual movement patterns.
+* **High Sampling Rate (1 kHz):** We sample the MPU-6500 at a high rate of **1 kilohertz (1000 samples per second)**.
+    * **Reasoning:** This high sampling rate is specifically chosen to capture **high-frequency phenomena**. Many critical mechanical anomalies, such as subtle vibrations indicating bearing wear, imbalances in rotating components, or transient shocks, manifest as rapid changes in acceleration. A lower sampling rate would simply miss these fast-occurring events, making effective anomaly detection not reliabe.
+
+**2. INA219 for Power-Related Anomaly Detection (Current and Voltage)**
+
+* **Purpose:** The INA219 is employed to detect anomalies related to **electrical power consumption**. These anomalies often indicate changes in the operational state or efficiency of connected components.
+* **Parallel Sampling (1 kHz):** Although the power-related anomalies it detects are generally not high in frequency, we sample the INA219 **in parallel with the MPU-6500 at the same 1 kHz rate**.
+    * **Reasoning for parallel sampling:** While the *anomalies themselves* might be lower frequency, sampling at 1 kHz in parallel ensures **perfect time synchronization** between motion and power data. This synchronization is critical for:
+        * **Correlating events:** We can precisely link a mechanical anomaly (detected by MPU-6500) with a change in power consumption (detected by INA219), this conjunction of data will be the input for neural netowrk used fo anomaly detection.
+    * **Examples of detectable anomalies related to power (not high frequency):**
+        * **Turning off the fan:** A sudden, significant drop in current draw and power consumption would indicate the fan has stopped operating.
+        * **Constant fluctuations in power:** While not "high frequency" in the sense of vibrations, persistent, non-periodic variations in power consumption could indicate an unstable power supply, loose connections, or a malfunctioning electrical component.
+        * **Traction on the motor that elevates power consumption:** An increase in the load or resistance on a motor (e.g., due to mechanical binding, increased friction) will lead to a noticeable and sustained elevation in power consumption. This anomaly is often characterized by a gradual or step-wise increase rather than a rapid spike.
+
+**System Integration and Anomaly Detection:**
+
+By combining the real-time, synchronized data from both sensors, our system gains a holistic view of the monitored environment. Anomaly detection algorithms combined with the building of a baseline and the set of a threshold for MPU650, are crucial to analyze these data streams to identify deviations from normal operating conditions. This multi-modal sensing approach significantly enhances the accuracy and reliability of our anomaly detection capabilities, allowing us to identify issues that might be missed by monitoring only motion or only power in isolation.
+
+---
 ## General software schema
 
 
-![Editor _ Mermaid Chart-2025-05-16-113630](https://github.com/user-attachments/assets/986a5bac-d331-47e3-bba4-a0d677fa5a5b)
+![program diagram](https://github.com/user-attachments/assets/947970a3-13ba-4492-8e88-5294935c95e6)
 
 
+## Program phases
 
-## Sampling & Communication Workflow
+The program operates in distinct phases based on the device's boot and wakeup conditions:
 
-![Communication task (1)](https://github.com/user-attachments/assets/c3faad33-debe-4a71-bce4-2156f9239219)
+**Phase 1: First Boot Initialization**
+This phase occurs only once, during the very first power-up of the device.
+* **Device ID Calculation**: A unique ID for the device is generated from its MAC address.
+* **Sensor Initialization**: The INA219 power monitor is initialized, and the MPU6500 accelerometer is initialized.
+* **Baseline Calibration**: A FreeRTOS task, `build_baseline_mpu6500`, is created to establish a baseline for motion detection. This task involves two sub-phases:
+    * **Average Baseline Acceleration**: The system collects numerous accelerometer readings to determine the average acceleration values, including the gravity component.
+    * **Maximum Deviation Measurement**: It then measures the maximum deviations from these established baselines over a series of samples.
+* **Threshold Calculation**: Based on the observed maximum deviations, a motion detection threshold is calculated and adjusted with a safety multiplier. This threshold is then converted into units that the MPU6500 can use for its Wake-on-Motion interrupt.
 
-The diagram below shows how FanGuard balances high-rate sensor sampling with periodic WiFi/MQTT uploads:
+**Phase 2: Wakeup from Deep Sleep for Periodic Check (INA Timer)**
+This phase is triggered when the device wakes up from deep sleep due to a pre-set timer, indicating a periodic check for the INA219 sensor.
+* **Wakeup Cause Recognition**: The program identifies that the wakeup reason was `ESP_SLEEP_WAKEUP_TIMER`.
+* **High-Frequency Sampling**: A `high_freq_sampling` task is immediately created. This task orchestrates the collection of high-frequency data from both the INA219 (power consumption) and MPU6500 (motion) sensors.
+    * It concurrently runs two sub-tasks: `task_flt_ina` to read filtered INA data and `task_avg_acc` to get RMS acceleration readings.
+* **Feature Collection and Classification**: Once the sampling is complete, the collected data is compiled into a feature set by the `fill_features` function. This feature set is then fed into a machine learning classifier (`classify()`) to detect any anomalies in power consumption or motion patterns.
+* **MQTT Communication (if anomaly)**: If the classifier identifies an anomaly (i.e., not a "normal" classification), the relevant data (classification, timestamp, probability) is sent via MQTT by calling `send_anomaly_mqtt`. This function in turn creates a `communication_task` to handle the actual MQTT communication.
+* **Return to Deep Sleep**: Regardless of whether an anomaly was detected, the system re-enters deep sleep after completing the sampling and communication (if any).
 
-1. **Sampling (30 s)**  
-   - **Task 1** runs a tight loop at sampling frequency (Hz):  
-     1. Read accelerometer  
-     2. Adds values to the window
-     3. Enter light-sleep
+**Phase 3: Wakeup from Deep Sleep due to MPU6500 Interrupt**
+This phase is initiated when the MPU6500 detects significant motion while the device is in deep sleep, triggering an external interrupt.
+* **Wakeup Cause Recognition**: The program recognizes that the wakeup reason was `ESP_SLEEP_WAKEUP_EXT0`, indicating an MPU6500 interrupt.
+* **Motion Anomaly Flag**: The `motion_anomaly` flag is set to `true`.
+* **High-Frequency Sampling**: Similar to the INA timer wakeup, a `high_freq_sampling` task is created. This task collects high-frequency data from both sensors for detailed analysis.
+* **Feature Collection and Classification**: The collected sensor data is processed, and the classifier determines if the detected motion constitutes an actual anomaly.
+* **MQTT Communication (if anomaly)**: If an anomaly is confirmed by the classifier, the data is sent via MQTT.
+* **Return to Deep Sleep**: After processing the motion event, the system transitions back into deep sleep.
 
-2. **Parallel Execution (≈5 s max)**  
-   - **Task 1** calculate RMS, detects anomalies, pushes to communication queue
-   - **Task 2** (WiFi/MQTT) kicks off while **Task 1** continues sampling.  
-   - To maintain precise sampling frequency (Hz) timing during transmission, **Task 1** uses a delay rather than light-sleep.  
-   - **Task 2** publishes buffered data over WiFi/MQTT.  
-
-3. **Resume Normal Sampling**  
-   - Once communication completes, **Task 1** returns to its light-sleeped sampling frequency (Hz) sampling loop.  
-
-![WhatsApp Image 2025-05-15 at 16 07 55](https://github.com/user-attachments/assets/a50b25fd-5774-41b8-af3d-4292a05e6eda)
-
-### Why Monitor Server Rack Fans Every 30 Seconds?
-
-This section documents our analysis and reasoning for implementing a 30-second monitoring frequency for server rack fan systems. Our analysis show this is a good balance between detection reliability and system resources.
-
-This system provides early detection of fan anomalies through accelerometer-based vibration monitoring, alerting operators before thermal damage occurs.
-
-#### The Problem: Rapid Temperature Rise
-
-Server racks experience alarmingly quick temperature increases after cooling failure:
-
-- A server rack starting at 20-23°C can reaches critical temperatures in **~5 minutes** after fans failure.
-
-This narrow intervention window requires a carefully calculated monitoring frequency.
-
-####  Response Timeline Components
-
-
-| Component | Time Required | Description |
-|-----------|---------------|-------------|
-| Alert processing | 5 seconds | System processing and alert distribution |
-| Human response | 120 seconds | Staff receiving alert and beginning intervention |
-| Intervention time | 60 seconds | Fix the problem |
-| Safety buffer | 25 seconds | Additional buffer for unexpected delays |
-| **Total response time** | **210 seconds** | From detection to completed intervention |
-
-With temperatures reaching critical levels 5 minutes, this leaves a maximum allowable detection delay of **90 seconds**.
-
-#### Monitoring Frequency Analysis
-
-We evaluated multiple monitoring intervals:
-
-| Monitoring Frequency | Worst-Case Detection Delay | Safety margin | Viable? |
-|--------------------:|---------------------------:|------------------:|:-------:|
-|              5 sec  |                    5.0 sec |           85 sec  |   YES   |
-|             10 sec  |                   10.0 sec |           80 sec  |   YES   |
-|             15 sec  |                   15.0 sec |           75 sec  |   YES   |
-|           **30 sec**|                **30.0 sec**|         **60 sec**| **YES** |
-|             60 sec  |                   60.0 sec |           30 sec  |   YES   |
-|            120 sec  |                  120.0 sec |           none  |    NO   |
-|            180 sec  |                  180.0 sec |           none  |    NO   |
-|            300 sec  |                  300.0 sec |           none  |    NO   |
-
-#### Why 30 Seconds is Optimal
-
-While intervals up to 60 seconds would technically work, we chose **30 seconds** for these reasons:
-
-- **Safety margin**: Provides additional buffer if response is delayed 
-- **Variable loads**: System load fluctuations could accelerate temperature rise
-- **Balance**: Strikes optimal balance between detection reliability and system resource utilization
-
-#### References
-
-- ASHRAE TC 9.9 Thermal Guidelines for Data Processing Environments
 
 
 ---
+
+## Sensor Data Analysis
+
+This section provides a graphical demonstration and intuitive understanding of how an IoT system can infer the state of a fan by utilizing both vibration and power consumption data.
+
+### Bearing
+
+![bearingChart](https://github.com/user-attachments/assets/d5c88541-f609-4ce8-a542-1301b090b168)
+
+- **Power Level**: ~230W (stable high power)
+- **RMS Values**: X: ~0.03, Y: ~1.09, Z: ~0.05
+- **Characteristics**: Stable operation with consistently high Y-axis vibration indicating bearing-related activity
+- **Description**: Represents high traction conditions on a fan motor system, typically caused by bearing degradation, insufficient lubrication, or increased mechanical resistance. The elevated power consumption (~230W) indicates the motor is working harder to overcome bearing friction, while the stable vibration pattern suggests consistent but problematic bearing performance that requires maintenance attention.
+
+### System Fluctuations
+
+![fluctuationsChart](https://github.com/user-attachments/assets/b1415170-8020-4fe7-a7cb-cfa2ae1f2392)
+
+- **Power Level**: Variable (25-165W) with cyclical patterns
+- **RMS Values**: X: ~0.06, Y: ~1.09, Z: ~0.05
+- **Characteristics**: Highly variable power consumption indicating system instability or cyclical operation modes
+- **Description**: Represents unstable power supply. This pattern could signal energy management systems or equipment struggling to maintain consistent operation.
+
+### Normal Operation
+
+![normalChart](https://github.com/user-attachments/assets/589601b9-bb8b-42aa-bc72-0f2d0fe437a8)
+
+- **Power Level**: ~140W (consistent moderate power)
+- **RMS Values**: X: ~0.05, Y: ~1.09, Z: ~0.05
+- **Characteristics**: Steady baseline operation with consistent power and vibration levels
+- **Description**: Represents optimal steady-state operation under normal working conditions. This serves as the baseline reference for comparison with other operational states, indicating healthy fan performance with balanced load and minimal mechanical stress.
+
+### Obstruction
+
+![obstructionChart](https://github.com/user-attachments/assets/320d6e31-13d5-4021-a552-4e50471b0d20)
+
+- **Power Level**: ~200W (elevated but stable)
+- **RMS Values**: X: 0.06-0.14 (variable), Y: ~1.09, Z: 0.06-0.13 (variable)
+- **Characteristics**: Elevated and variable X/Z axis vibrations indicating mechanical obstruction or interference
+- **Description**: Represents mechanical interference such as foreign objects in moving parts, misalignment, or partial blockages. The increased power consumption and erratic X/Z vibrations suggest the system is working harder to overcome resistance, potentially leading to accelerated wear if not addressed.
+
+### System Off
+
+![offChart](https://github.com/user-attachments/assets/deeb1011-45a8-43d5-ad1a-f18ee1fc66a4)
+
+- **Power Level**: 0W (no consumption)
+- **RMS Values**: X: ~0.05, Y: ~1.09, Z: ~0.05 (baseline sensor noise)
+- **Characteristics**: Complete power shutdown with only residual sensor noise remaining
+- **Description**: Represents complete system shutdown.
+
+### Analysis Summary
+
+| Condition | Power (W) | RMS X | RMS Y | RMS Z | Key Indicators |
+|-----------|-----------|-------|-------|-------|----------------|
+| **Bearing Operation** | ~230 | ~0.03 | ~1.09 | ~0.05 | High stable power with consistent vibrations |
+| **Fluctuations** | 25-165 | ~0.06 | ~1.09 | ~0.05 | Highly variable power with cyclical patterns |
+| **Normal Operation** | ~140 | ~0.05 | ~1.09 | ~0.05 | Moderate stable power with balanced vibration |
+| **Obstruction** | ~200 | 0.06-0.14 | ~1.09 | 0.06-0.13 | Elevated power with increased X/Z axis variability |
+| **System Off** | 0 | ~0.05 | ~1.09 | ~0.05 | No power consumption |
 
 ## AI / Machine-Learning Pipeline
 This project blends classic condition-monitoring features with a tiny neural-network so that **FanGuard can spot abnormal vibration signatures in real-time—without cloud round-trips**. We collect raw samples from the MPU6050 ant then calculate RMS , label them as *normal* or *anomaly*, and train a compact INT8-quantised Keras model in Edge Impulse. Once flashed, the model executes inside TensorFlow Lite Micro on the ESP32.
@@ -222,97 +305,50 @@ The INT8-quantised classifier exhibits high confidence and generalisation on the
 
 ## Power consumption: measurements
 
-Below is a snapshot of the device’s real-time power draw, captured over multiple operation cycles. The chart highlights three distinct phases: **initialization**, **active** WiFi/MQTT/sampling, and **light-sleep** sampling.
 
 
-![WhatsApp Image 2025-05-15 at 15 41 33](https://github.com/user-attachments/assets/efa06ee1-41e3-44f0-9461-c42c3ed94b26)
+![power_consumption](https://github.com/user-attachments/assets/ba6fe9bd-36d9-4364-a57e-9ee7c26c87e0)
 
 
 ## Power Consumption: analysis
 
-This analysis compares two power scenarios for a device over a total duration of 35 seconds:
-1.  **Full Active Mode**: A constant power consumption of 400mW for the entire 35 seconds (Sampling time + RMS Calculation + Wifi/MQTT communication ).
-2.  **Hybrid Mode**: An initial period of high activity (400mW for 5 seconds), this rappresents Wifi/MQTT communication with5 seconds in the worst case scenario (NUM_MAX_RETRIES * DELAY), followed by a longer period (30 seconds), that rappresents the sampling/rms calculation, utilizing a low-power state (light sleep) with periodic, short bursts of higher power for sampling. **The sampling phase assumes 4ms active time and 1ms light sleep time per cycle (Worst case).**
+To establish an upper bound for the system's lifetime, we'll simplify our energy consumption model. While the device's total energy usage is influenced by both periodic checks and anomaly detection initiated by MPU6500 interrupts, we'll only account for the energy consumed by periodic checks in this calculation.
+
+### Power States
+- **Initialization Phase**: 6 seconds at system startup
+- **Deep Sleep**: 2-minute cycles with motion interrupt capability
+- **Anomaly Detection**: 2-5 seconds depending on trigger type
+- **WiFi Communication**: 2 seconds when anomalies are detected
+
+### Wake-up Conditions
+1. **Timer-based**: Every 2 minutes for routine monitoring
+2. **Motion interrupt**: When MPU6500 threshold is exceeded
+
+## Power Consumption Specifications
+
+| Component/State | Power (mW) | Current (mA)* |
+|-----------------|------------|---------------|
+| Initialization | 130 | 35.1 |
+| Anomaly Detection | 150 | 40.5 |
+| WiFi/MQTT Communication | 400 | 108.1 |
+| Deep Sleep | 0.6 | 0.16 |
 
 
-This comparison helps to illustrate the energy savings we achive on our system. That garantees an life battery time of ~
+## Battery Life Calculations
+In case of **Battery**: 4000mAh Li-ion (3.7V)
+#### Best Case (No Anomalies Detected)
+- **Cycles per day**: 720 (every 2 minutes)
+- **Energy per cycle**: 0.0147 mAh
+- **Daily consumption**: 10.58 mAh
+- **Battery life**: **273 days (9.1 months)**
 
-### Parameters
+### Best Case Scenario (No Anomalies)
 
-| Parameter             | Value         |
-|-----------------------|---------------|
-| **Full Active Power** | 400 mW        |
-| **Light Sleep Power** | 25 mW         |
-| **Active Burst Power**| 200 mW        |
-| **Sampling Frequency**| 200 Hz        |
-| **Sampling Cycle** | 5 ms (1/200 Hz) |
-| **Assumed Active Time per Sample** | **4 ms** |
-| **Assumed Sleep Time per Sample** | **1 ms** (5 ms - 4 ms) |
-| **Total Duration Compared** | 35 seconds |
-
-
-### Calculations
-
-#### **Scenario 1: Full Active Mode (35 seconds)**
-
-In this scenario, the device consumes a constant 400 mW for the entire 35-second duration.
-
--   **Total Energy**:
-    ```
-    Energy = Power * Time
-    Energy = 400 mW * 35 s = 14000 mJ
-    ```
-
-
-#### **Scenario 2: Hybrid Mode (5s Active + 30s Light Sleep/Sampling - Revised)**
-
-This scenario consists of two distinct phases:
-
-1.  **First 5 seconds (Initial Active Phase)**: The device consumes 400 mW for the first 5 seconds.
-    ```
-    Energy_initial = 400 mW * 5 s = 2000 mJ
-    ```
-
-2.  **Next 30 seconds (Sampling Phase)**: For the remaining 30 seconds, the device cycles between light sleep (25 mW) and brief active bursts (200 mW) for sampling at 200 Hz, with the revised timing (4ms active, 1ms sleep).
-
-    * **Sampling Cycle Details**: At 200 Hz, each sampling cycle takes 5 ms. Within each 5 ms cycle, the device is active for **4 ms** and in light sleep for **1 ms**.
-
-    * **Energy per Sampling Cycle**:
-        ```
-        Energy_cycle = (Active Time * Active Burst Power) + (Sleep Time * Light Sleep Power)
-        Energy_cycle = (4 ms * 200 mW) + (1 ms * 25 mW) = 800 mJ + 25 mJ = 825 mJ per 5ms cycle
-        ```
-
-    * **Average Power during Sampling Phase**:
-        ```
-        Avg Power during Sampling = Energy per Cycle / Cycle Time
-        Avg Power during Sampling = 825 mJ / 5 ms = 165 mW
-        ```
-
-    * **Energy for 30 seconds of Sampling**:
-        ```
-        Energy_sampling = Avg Power during Sampling * Time
-        Energy_sampling = 165 mW * 30 s = 4950 mJ
-        ```
-
-3.  **Total Energy for Scenario 2 (over 35s)**: The total energy is the sum of the energy from the initial active phase and the sampling phase.
-    ```
-    Total Energy_hybrid = Energy_initial + Energy_sampling
-    Total Energy_hybrid = 2000 mJ + 4950 mJ = 6950 mJ
-    ```
-
-### Results
-
-| **Scenario** |Avg. Power |
-|----------------------------|----------|
-| **1. 35s Full Active** | 400 mW     |
-| **2. 5s Active + 30s Hybrid** | **198.6 mW**|
-
-
-### Key Insights
-
-1.  **Energy Savings**: The hybrid approach offers energy savings, even when considering the worst case scenario of ripartition of active mode and light sleep mode. With these parameters (4ms active/1ms sleep), the hybrid mode consumes approximately **50.4% less energy** over 35 seconds compared to staying fully active.
-
+| Component | Energy (mAh/day) | Percentage |
+|-----------|------------------|------------|
+| Deep Sleep | 9.60 | 90.8% |
+| Anomaly Detection | 0.97 | 9.2% |
+| **Total** | **10.57** | **100%** |
 ---
 
 ## Security Implications:
@@ -416,13 +452,11 @@ After this evaluation we perfomed tests to analyze the real performances of the 
 In the picture above we can see the results of our tests, by considering only the performance aspect, TLS revealed to be faster than HMAC and this is likely due to the fact that the computation step of the hmac for each message slws down the communication step, also we would like to point out that in these results we do not take into consideration that the hmac must be verified at the receiving end, i.e. the cloud application thus adding complexity a computational overhead in another point of the system.
 
 ---
-
 ## Cloud Application
 
-The last component of our system is the cloud, this is the final destination of the data gathered and computed by the sensors in order to make this data usable and readable by human operators through a web application. 
-Thanks to this tool an operator can achieve  a global view of the servers fans health status also they can  monitor the situation in realtime and respond quickly to anomalous situations. 
+The last component of our system is the cloud, here we host an application used to display the anomalies detected by the IoT devices, the anomalies are displayed both in real time and also through the log.
 
-![image](https://github.com/user-attachments/assets/78cf1217-ee41-4ce5-a18b-50fab6d62c78)
+![alt text](src/cloud-application/cloud-app.png)
 
 ### The Architecture
 
@@ -436,12 +470,8 @@ In this section we give an overview of the structure and the technologies used f
 
 ### Presentation Level
 
-In the presentation video that you can find at this link: link, you can see how the application works from the presentation level:
-
-There are 2 pages that can be access through the navbar placed on the top, the first page that is also the index of the application is called __realtime graphs__ in this page you can select an IoT device and then click the Submit button, at this point 4 graphs will be generated for you, these graphs are realtime so they are periodically updated with the new data coming from the IoT devices. \
-The graphs generated show the power levels measured in mW and the vibration on the 3 axes measured in g, each value is timestamped with the time it was received by the cloud application, in order to make it more readable and easy to understand this timestamp has been processed in order to be shown in terms hours,minutes and seconds.\
-On the right side of the page there is also a table that shows  the last 10 most recent anomalies detected by the system. \
-The second page called __log__ is very similar to the first one, the functionalities are the same, but here the graphs are not realtime and by using time selectors the operator can choose a time interval of interest of which to generate the graphs and the anomalies table.
+The application is composed of two pages: realtime and Log. In the first page a use can select the interested device to monitor and in realtime the application will show the anomalies detected.\
+The log page gives the user a way to access information about anomalies detected in a specific time period.
 
 ### Under the hood: the back end
 
@@ -451,9 +481,7 @@ The back end of the application as stated in the previous paragraph uses Java Sp
   * __View__: From a api call to the proper url it returns the html and javascript code to render the web page.
   * __Controller__: Manages interaction between Model and View, there is a controller that manages API calls from javscript code to retrieve information from the DB and a controller that manages the web pages routing.
 
-At startup the application connects to the MQTT broker and subscribes to the interested topics, when a new message written in json fromat comes from the IoT devices into the broker, the application consumes it from it, this message is then parsed into a DTO (Data Transfer Object) using a JSON serializer and then stored on the database. \
-As stated before the application uses javascript at the presentation level to handle the graph generation and other graphicacl functionalities, the data needed to fill the graphs is retrieved from the backend through an ajax request that is handled by a back end controller which processes the request, interacts with the DB to retrieve the data , process it into a service class and finally returns it as response.\
-Notice that before storing the data retrieved from the MQTT broker the system verifies the hmac contained in the message, if it is not valid the message is dropped, this security mechanism is used to prevent possible replay attacks.
+At startup the application connects to the MQTT broker and subscribes to the interested topics, when a new message written in json format comes from the IoT devices into the broker, the application consumes it from it, this message is then parsed into a DTO (Data Transfer Object) using a JSON serializer and then stored in the database. \
 
 ---
 
