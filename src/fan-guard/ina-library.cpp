@@ -2,6 +2,7 @@
 #include "ina-library.h"
 #include "shared-defs.h"
 #include "sampling.h"
+
 Adafruit_INA219 ina219;
 
 // Variables for filtering
@@ -23,16 +24,11 @@ RTC_DATA_ATTR float max_deviation = 0;
 RTC_DATA_ATTR int ina_threshold = 0;
 
 void ina219_init() {
-  Serial.begin(115200);
-  while (!Serial) {
-    vTaskDelay(pdMS_TO_TICKS(1));
-  }
-
-  Serial.println("Based on INA219 Power Monitor");
-
   if (!ina219.begin()) {
     Serial.println("Failed to find INA219 chip");
     while (1) { vTaskDelay(pdMS_TO_TICKS(10)); }
+  }else{
+    Serial.println("ina219 is connected");
   }
 
   ina219.setCalibration_16V_400mA();
@@ -62,7 +58,8 @@ xyzFloat get_rms_reading_mpu(MPU6500_WE& mpu_instance, int samples) {
     sum_x_squared += temp.x * temp.x;
     sum_y_squared += temp.y * temp.y;
     sum_z_squared += temp.z * temp.z;
-    vTaskDelay(pdMS_TO_TICKS(1));
+    vTaskDelay(pdMS_TO_TICKS(1000/g_sampling_frequency));
+
   }
   
   temp.x = sqrt(sum_x_squared / samples);
@@ -76,7 +73,7 @@ float get_averaged_reading(float (*read_function)(), int samples) {
   float sum = 0;
   for (int i = 0; i < samples; i++) {
     sum += read_function();
-    vTaskDelay(pdMS_TO_TICKS(1));
+    vTaskDelay(pdMS_TO_TICKS(1000/g_sampling_frequency));
   }
   return sum / samples;
 }

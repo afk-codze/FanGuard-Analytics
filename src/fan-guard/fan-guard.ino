@@ -13,8 +13,6 @@
 #include "sampling.h"
 #include "driver/uart.h"
 
-#define BUZZER_PIN 23
-
 #define DEEP_SLEEP_INA_SEC 10
 #define DEEP_SLEEP_INA_US (DEEP_SLEEP_INA_SEC * 1000ULL * 1000ULL)
 
@@ -65,11 +63,9 @@ void setup() {
     is_first_boot = false;
   }
 
-  Serial.printf("Device ID: %llX\n", id_device); // Print device ID
-  
   if(motion_anomaly){
     motion_anomaly = false;
-    Serial.print("*** Anomaly ***");
+    Serial.print("\n*** Anomaly \n***");
     xTaskCreate(high_freq_sampling, "high_freq_sampling", 8096, xTaskGetCurrentTaskHandle(), 1, NULL);
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
   }

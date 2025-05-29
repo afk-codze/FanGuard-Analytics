@@ -24,14 +24,7 @@ extern Adafruit_INA219 ina219;
 // Threshold for spike filtering, represents the maximum acceptable change between readings.
 #define SPIKE_THRESHOLD 0.7
 
-// Baseline and anomaly detection parameters
-// Number of samples to establish the baseline for power consumption.
-#define BASELINE_SAMPLES 100
-// Standard deviations from the mean to define an anomaly.
-#define ANOMALY_THRESHOLD 2.3
-
 #define PERIODIC_CHECK_SAMPLES 1000
-#define DATA_BUFFER_SIZE 50
 
 
 // Variables for filtering

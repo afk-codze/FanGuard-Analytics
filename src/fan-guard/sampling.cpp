@@ -4,11 +4,13 @@
 #include "sampling.h"
 
 
-xyzFloat motion_samples[NUM_SAMPLES] = {{0,0,0}};
-float ina_samples[NUM_SAMPLES] = {0};
-
-float features[DATA_BUFFER_SIZE * 4] = {0};
+int num_samples = 0;
+int data_buffer_size = 0;
+float *features = NULL;
 int feature_idx = 0;
+xyzFloat *motion_samples = NULL;
+float *ina_samples = NULL;
+int g_sampling_frequency = SAMPLE_RATE;
 
 int raw_feature_get_data(size_t offset, size_t length, float *out_ptr) {
   for (size_t i = 0; i < length; i++) {
@@ -17,20 +19,11 @@ int raw_feature_get_data(size_t offset, size_t length, float *out_ptr) {
   return 0;
 }
 
-bool classify_anomaly(xyzFloat *motion_samples,float *ina_samples){
-  Serial.printf("\n classify anomaly\n");
-  return true;
-}
-
-void send_anomaly_mqtt(bool anomaly_class,xyzFloat *motion_samples,float *ina_samples){
-  Serial.printf("*** Anomaly mpu sent ***");
-}
-
 void task_avg_acc(void *args){
-  for(int i =0; i<DATA_BUFFER_SIZE;i++){
+  for(int i =0; i< num_samples;i++){
     motion_samples[i] = get_rms_reading_mpu(my_mpu6500,NUM_AVG_ACC);
-    Serial.printf("x_rms:%.2f , y_rms:%.2f , z_rms:%.2f \n",motion_samples[i].x,motion_samples[i].z,motion_samples[i].y);
-    vTaskDelay(pdMS_TO_TICKS(1));
+    //Serial.printf("x_rms:%.2f , y_rms:%.2f , z_rms:%.2f \n",motion_samples[i].x,motion_samples[i].z,motion_samples[i].y);
+    vTaskDelay(pdMS_TO_TICKS(1000/g_sampling_frequency));
   }
 
   xTaskNotifyGive((TaskHandle_t)args);
@@ -38,10 +31,10 @@ void task_avg_acc(void *args){
 }
 
 void task_flt_ina(void *args){
-  for(int i =0; i<DATA_BUFFER_SIZE;i++){
+  for(int i =0; i< num_samples;i++){
     ina_samples[i] = read_ina_filtered();
-    Serial.printf("pw:%.2f \n",ina_samples[i]);
-    vTaskDelay(pdMS_TO_TICKS(1));
+    //Serial.printf("pw:%.2f \n",read_ina_filtered());
+    vTaskDelay(pdMS_TO_TICKS(1000/g_sampling_frequency));
   }
 
   xTaskNotifyGive((TaskHandle_t)args);
@@ -49,10 +42,10 @@ void task_flt_ina(void *args){
 }
 
 void fill_features(){
-  for(int i = 0 ; i< DATA_BUFFER_SIZE;i++){
+  for(int i = 0 ; i< num_samples;i++){
     features[feature_idx++] = motion_samples[i].x;
-    features[feature_idx++] = motion_samples[i].y;
     features[feature_idx++] = motion_samples[i].z;
+    features[feature_idx++] = motion_samples[i].y;
     features[feature_idx++] = ina_samples[i];
   }
 }
@@ -63,7 +56,7 @@ void fill_features(){
 data_to_send_t classify() {
   data_to_send_t data_to_send;
   signal_t features_signal;
-  features_signal.total_length = DATA_BUFFER_SIZE*4;
+  features_signal.total_length = data_buffer_size;
   features_signal.get_data = &raw_feature_get_data;
 
   ei_impulse_result_t result = {0};
@@ -98,15 +91,37 @@ void high_freq_sampling(void *args){
 
   Serial.printf("--- SAMPLING ---\n");
   data_to_send_t data_to_send;
+  data_buffer_size = g_sampling_frequency/NUM_AVG_ACC * 4;
+  num_samples = data_buffer_size/4;
+  
+  // Allocate arrays dynamically
+  motion_samples = (xyzFloat*) malloc(num_samples * sizeof(xyzFloat));
+  ina_samples = (float*) malloc(num_samples * sizeof(float));
+  features = (float*) malloc(data_buffer_size * sizeof(float));
+  if (features == NULL) {
+      Serial.printf("ERROR: Failed to allocate memory for features\n");
+      xTaskNotifyGive((TaskHandle_t)args);
+      vTaskDelete(NULL);
+      return;
+  }
+
   xTaskCreatePinnedToCore(task_avg_acc, "task_avg_acc", 4096, xTaskGetCurrentTaskHandle(), 1, NULL,0);
   xTaskCreatePinnedToCore(task_flt_ina, "task_flt_ina", 4096, xTaskGetCurrentTaskHandle(), 1, NULL,1);
   
   ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
   ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
   fill_features();
+
   data_to_send = classify();
+
   if(data_to_send.classification != CLASS_NORMAL)
     send_anomaly_mqtt(data_to_send);
+
+  free(motion_samples); motion_samples = NULL;
+  free(ina_samples); ina_samples = NULL;
+  free(features); features = NULL;
+  
   Serial.print("\nSampling finished\n");
   xTaskNotifyGive((TaskHandle_t)args);
   vTaskDelete(NULL);

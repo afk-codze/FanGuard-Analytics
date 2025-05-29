@@ -1,4 +1,5 @@
 #include "MPU6500-library.h"
+#include "sampling.h"
 
 extern MPU6500_WE my_mpu6500(MPU6500_ADDR); 
 volatile bool motion_anomaly = false;
@@ -97,7 +98,7 @@ void build_baseline_mpu6500(void *args){
       Serial.print(max_deviation, 3);
       Serial.println("g");
     }
-    vTaskDelay(pdMS_TO_TICKS(SAMPLING_PERIOD));
+    vTaskDelay(pdMS_TO_TICKS(1000/g_sampling_frequency));
   }
 
   // Apply safety margin to maximum observed deviation

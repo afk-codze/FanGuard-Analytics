@@ -21,7 +21,7 @@ const char* dataClassificationToString(DataClassification classification) {
   switch (classification) {
     case CLASS_NORMAL:    return "normal";
     case CLASS_BEARING: return "bearing";
-    case CLASS_OFF:     return "turned_off";
+    case CLASS_OFF:     return "off";
     case CLASS_FLUCTUATIONS:     return "fluctuations";
     case CLASS_OBSTRUCTION: return "obstruction";
     default:                  return "uncertain";
@@ -36,7 +36,7 @@ DataClassification stringToDataClassification(const char* classificationString) 
     return CLASS_NORMAL;
   } else if (strcmp(classificationString, "bearing") == 0) {
     return CLASS_BEARING;
-  } else if (strcmp(classificationString, "turned_off") == 0) {
+  } else if (strcmp(classificationString, "off") == 0) {
     return CLASS_OFF;
   } else if (strcmp(classificationString, "fluctuations") == 0) {
     return CLASS_FLUCTUATIONS;
