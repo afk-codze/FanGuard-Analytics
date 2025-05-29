@@ -223,6 +223,8 @@ This section provides a graphical demonstration and intuitive understanding of h
 | **Obstruction** | ~200 | 0.06-0.14 | ~1.09 | 0.06-0.13 | Elevated power with increased X/Z axis variability |
 | **System Off** | 0 | ~0.05 | ~1.09 | ~0.05 | No power consumption |
 
+---
+
 ## AI / Machine-Learning Pipeline
 FanGuard combines motion and power analysis to detect anomalies in server-rack fans, running entirely on-device with no cloud dependency. By leveraging both vibration (MPU6500) and power consumption (INA219), the system achieves richer condition monitoring and fewer false positives. This hybrid approach allows for earlier detection of issues like bearing wear or airflow obstruction, even when vibrations are subtle.
 
@@ -237,7 +239,7 @@ We preprocess the raw sensor signals to compute RMS values for motion axes and a
 | Dataset size        | 470 samples → 80% train / 20% test                     |
 
 
-> 📄 *Code reference*: [src/ml-model/dataset-builder.ino](src/ml-model/dataset-builder.ino)
+> 📄 *Code reference*: [src/ml-model/dataset-builder.ino](src/ml-model/dataset_builder.ino)
 
 ### 2. Edge Impulse pipeline  
 - **Input Block**: 4 Axes:`rms_x`, `rms_y`, `rms_z`, `pw` inputs.  Window size: 270ms, Stride: 100ms, Frequency: 50Hz
@@ -246,25 +248,25 @@ We preprocess the raw sensor signals to compute RMS values for motion axes and a
 
 ![image](https://github.com/user-attachments/assets/de435774-5184-4940-a215-b63cdd7c559f)
 
-### 3. Model architecture & training script  
+### 3. Model Architecture & Training
 
-The model accepts four features (3-axis RMS + power) and uses a shallow dense neural network for classification:
-Input layer: 4 features
-Dense Layer 1: 16 neurons
-Dense Layer 2: 8 neurons
-Output Layer: 5 classes
+The model accepts four input features—**RMS from X/Y/Z motion axes and power consumption**—and feeds them into a shallow, fully-connected neural network optimized for on-device inference.
 
-Training configuration:
+**Network Structure:**
 
-Epochs: 150
-Batch size: 32
-Optimizer: Adam
-Learning rate: 0.01
-Auto class balancing: Enabled
-INT8 quantization: Supported
+* **Input Layer:** 4 features (`rms_x`, `rms_y`, `rms_z`, `pw`)
+* **Dense Layer 1:** 16 neurons
+* **Dense Layer 2:** 8 neurons
+* **Output Layer:** 5 classes (`bearing`, `fluctuations`, `normal`, `obstruction`, `off`)
 
+**Training Configuration:**
 
-> 📄 *Code reference*: [src/ml-model/keras-model.py](src/ml-model/keras-model.py)
+* **Epochs:** 150
+* **Batch Size:** 32
+* **Optimizer:** Adam
+* **Learning Rate:** 0.01
+* **Class Balancing:** Enabled (auto-weighting)
+* **Quantization:** INT8 for deployment on TensorFlow Lite Micro
 
 ### 4. Model performance & accuracy
 The model achieves high classification accuracy and excellent separation between classes.
