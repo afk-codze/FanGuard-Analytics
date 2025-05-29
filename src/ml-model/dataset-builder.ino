@@ -1,87 +1,104 @@
+/*
+  DatasetSampler_1kHz_stream.ino
+  ──────────────────────────────
+  Continuous CSV stream:
+    idx , ts_ms , x_rms_g , y_rms_g , z_rms_g , power_mW
+*/
+#include <Arduino.h>
 #include <Wire.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_ADXL345_U.h>
+#include <MPU6500_WE.h>
+#include <Adafruit_INA219.h>
 
-// I2C pins (change if your board differs)
-#define ADXL345_SDA 41
-#define ADXL345_SCL 42
+/* ---------------- user parameters (match production) --------------- */
+#define SAMPLE_RATE     1000          // raw Hz (1 kHz)
+#define NUM_AVG_ACC     20            // raw points per feature row
+#define ALPHA           0.10f         // INA low-pass factor
+#define SERIAL_BAUD     115200
+#define I2C_SDA         41
+#define I2C_SCL         42
+#define MPU6500_ADDR    0x68
+/* ------------------------------------------------------------------- */
 
-// window length (samples)
-#define WINDOW_SIZE 300
-// conversion from m/s² to g
-const float MPS2_TO_G = 1.0 / 9.80665;
+/* xyzFloat is already defined inside the *_WE libraries */
+TwoWire         I2CBus = TwoWire(0);
+MPU6500_WE      mpu6500(&I2CBus, MPU6500_ADDR);
+Adafruit_INA219 ina219;
 
-// ADXL345 object
-Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified();
+/* INA219 LPF state */
+static bool  first_lp = true;
+static float power_lp = 0;
 
-// circular buffers for X, Y, Z
-float bufX[WINDOW_SIZE];
-float bufY[WINDOW_SIZE];
-float bufZ[WINDOW_SIZE];
-int  bufIndex = 0;
-bool bufferFull = false;
+/* timing helpers */
+const uint32_t RAW_INTERVAL_US = 1'000'000 / SAMPLE_RATE;   // 1 000 µs
 
-// running sums of squares
-float sumSqX = 0, sumSqY = 0, sumSqZ = 0;
+/* ------------------------------------------------------------------- */
+void setup()
+{
+  Serial.begin(SERIAL_BAUD);
+  // give the host up to 2 s to open the port, then continue anyway
+  uint32_t t0 = millis();
+  while (!Serial && millis() - t0 < 2000) { }
 
-void setup() {
-  Serial.begin(115200);
-  while (!Serial) delay(1);
+  Serial.println("\nidx,ts_ms,x_rms_g,y_rms_g,z_rms_g,power_mW");
 
-  // initialize I²C and sensor
-  Wire.begin(ADXL345_SDA, ADXL345_SCL);
-  if (!accel.begin()) {
-    Serial.println("ERROR: ADXL345 not found!");
-    while (1) delay(10);
-  }
-  accel.setRange(ADXL345_RANGE_2_G);
-  accel.setDataRate(ADXL345_DATARATE_100_HZ);
+  I2CBus.begin(I2C_SDA, I2C_SCL, 400000);
 
-  // zero out buffers
-  for (int i = 0; i < WINDOW_SIZE; i++) {
-    bufX[i] = bufY[i] = bufZ[i] = 0.0;
-  }
+  /* MPU-6500: identical settings to your production firmware */
+  if (!mpu6500.init()) { Serial.println("MPU6500 missing"); while (1) {} }
+  mpu6500.enableAccDLPF(true);
+  mpu6500.setAccRange(MPU6500_ACC_RANGE_2G);
+  mpu6500.setAccDLPF(MPU6500_DLPF_2);
 
-  // CSV header
-  Serial.println("rmse_x,rmse_y,rmse_z");
+  /* INA219 */
+  if (!ina219.begin(&I2CBus)) { Serial.println("INA219 missing"); while (1) {} }
+  ina219.setCalibration_16V_400mA();
 }
 
-void loop() {
-  sensors_event_t evt;
-  accel.getEvent(&evt);
+/* acquire one 20-sample slice → return synchronous RMS & mean values */
+void get_feature_row(float &xr, float &yr, float &zr, float &power_lp_out,
+                     uint32_t &ts_ms)
+{
+  float sx2 = 0, sy2 = 0, sz2 = 0, sumP = 0;
+  uint32_t next_tick = micros();
+  ts_ms = millis();                      // timestamp at start of slice
 
-  // convert to g
-  float gx = evt.acceleration.x * MPS2_TO_G;
-  float gy = evt.acceleration.y * MPS2_TO_G;
-  float gz = evt.acceleration.z * MPS2_TO_G;
+  for (int i = 0; i < NUM_AVG_ACC; ++i)
+  {
+    while ((int32_t)(micros() - next_tick) < 0) { /* busy-wait to 1 kHz */ }
+    next_tick += RAW_INTERVAL_US;
 
-  // update running sums of squares (remove old, add new)
-  sumSqX += gx * gx - bufX[bufIndex] * bufX[bufIndex];
-  sumSqY += gy * gy - bufY[bufIndex] * bufY[bufIndex];
-  sumSqZ += gz * gz - bufZ[bufIndex] * bufZ[bufIndex];
+    xyzFloat a = mpu6500.getGValues();
+    float Pw   = ina219.getPower_mW();
 
-  // store new sample in circular buffer
-  bufX[bufIndex] = gx;
-  bufY[bufIndex] = gy;
-  bufZ[bufIndex] = gz;
-
-  bufIndex++;
-  if (bufIndex >= WINDOW_SIZE) {
-    bufIndex = 0;
-    bufferFull = true;
+    sx2  += a.x * a.x;
+    sy2  += a.y * a.y;
+    sz2  += a.z * a.z;
+    sumP += Pw;
   }
 
-  // once we have a full window, compute & print RMS
-  if (bufferFull) {
-    float rmse_x = sqrt(sumSqX / WINDOW_SIZE);
-    float rmse_y = sqrt(sumSqY / WINDOW_SIZE);
-    float rmse_z = sqrt(sumSqZ / WINDOW_SIZE);
+  xr = sqrtf(sx2 / NUM_AVG_ACC);
+  yr = sqrtf(sy2 / NUM_AVG_ACC);
+  zr = sqrtf(sz2 / NUM_AVG_ACC);
 
-    // CSV output
-    Serial.print(rmse_x, 4); Serial.print(",");
-    Serial.print(rmse_y, 4); Serial.print(",");
-    Serial.println(rmse_z, 4);
-  }
+  float p_mean = sumP / NUM_AVG_ACC;
+  if (first_lp) { power_lp = p_mean; first_lp = false; }
+  else          { power_lp = ALPHA * p_mean + (1 - ALPHA) * power_lp; }
 
-  delay(10);
+  power_lp_out = power_lp;
+}
+
+/* ------------------------------------------------------------------- */
+void loop()
+{
+  static uint32_t idx = 0;
+  float xr, yr, zr, p;
+  uint32_t ts;
+
+  get_feature_row(xr, yr, zr, p, ts);
+
+  Serial.printf("%lu,%lu,%.6f,%.6f,%.6f,%.6f\n",
+                idx++,        // monotonically increasing index
+                ts,           // ms timestamp at start of slice
+                xr, yr, zr,   // RMS acceleration
+                p);           // filtered power
 }
