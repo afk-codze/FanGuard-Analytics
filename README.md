@@ -100,32 +100,39 @@ The hardware stack is deliberately minimal: a single **ESP32** sits at the centr
 ## General software schema
 
 
-![Editor _ Mermaid Chart-2025-05-16-113630](https://github.com/user-attachments/assets/986a5bac-d331-47e3-bba4-a0d677fa5a5b)
+![program diagram](https://github.com/user-attachments/assets/947970a3-13ba-4492-8e88-5294935c95e6)
 
 
+# Program phases
 
-## Sampling & Communication Workflow
+The program operates in distinct phases based on the device's boot and wakeup conditions:
 
-![Communication task (1)](https://github.com/user-attachments/assets/c3faad33-debe-4a71-bce4-2156f9239219)
+**Phase 1: First Boot Initialization**
+This phase occurs only once, during the very first power-up of the device.
+* **Device ID Calculation**: A unique ID for the device is generated from its MAC address.
+* **Sensor Initialization**: The INA219 power monitor is initialized, and the MPU6500 accelerometer is initialized.
+* **Baseline Calibration**: A FreeRTOS task, `build_baseline_mpu6500`, is created to establish a baseline for motion detection. This task involves two sub-phases:
+    * **Average Baseline Acceleration**: The system collects numerous accelerometer readings to determine the average acceleration values, including the gravity component.
+    * **Maximum Deviation Measurement**: It then measures the maximum deviations from these established baselines over a series of samples.
+* **Threshold Calculation**: Based on the observed maximum deviations, a motion detection threshold is calculated and adjusted with a safety multiplier. This threshold is then converted into units that the MPU6500 can use for its Wake-on-Motion interrupt.
 
-The diagram below shows how FanGuard balances high-rate sensor sampling with periodic WiFi/MQTT uploads:
+**Phase 2: Wakeup from Deep Sleep for Periodic Check (INA Timer)**
+This phase is triggered when the device wakes up from deep sleep due to a pre-set timer, indicating a periodic check for the INA219 sensor.
+* **Wakeup Cause Recognition**: The program identifies that the wakeup reason was `ESP_SLEEP_WAKEUP_TIMER`.
+* **High-Frequency Sampling**: A `high_freq_sampling` task is immediately created. This task orchestrates the collection of high-frequency data from both the INA219 (power consumption) and MPU6500 (motion) sensors.
+    * It concurrently runs two sub-tasks: `task_flt_ina` to read filtered INA data and `task_avg_acc` to get RMS acceleration readings.
+* **Feature Collection and Classification**: Once the sampling is complete, the collected data is compiled into a feature set by the `fill_features` function. This feature set is then fed into a machine learning classifier (`classify()`) to detect any anomalies in power consumption or motion patterns.
+* **MQTT Communication (if anomaly)**: If the classifier identifies an anomaly (i.e., not a "normal" classification), the relevant data (classification, timestamp, probability) is sent via MQTT by calling `send_anomaly_mqtt`. This function in turn creates a `communication_task` to handle the actual MQTT communication.
+* **Return to Deep Sleep**: Regardless of whether an anomaly was detected, the system re-enters deep sleep after completing the sampling and communication (if any).
 
-1. **Sampling (30 s)**  
-   - **Task 1** runs a tight loop at sampling frequency (Hz):  
-     1. Read accelerometer  
-     2. Adds values to the window
-     3. Enter light-sleep
-
-2. **Parallel Execution (≈5 s max)**  
-   - **Task 1** calculate RMS, detects anomalies, pushes to communication queue
-   - **Task 2** (WiFi/MQTT) kicks off while **Task 1** continues sampling.  
-   - To maintain precise sampling frequency (Hz) timing during transmission, **Task 1** uses a delay rather than light-sleep.  
-   - **Task 2** publishes buffered data over WiFi/MQTT.  
-
-3. **Resume Normal Sampling**  
-   - Once communication completes, **Task 1** returns to its light-sleeped sampling frequency (Hz) sampling loop.  
-
-![WhatsApp Image 2025-05-15 at 16 07 55](https://github.com/user-attachments/assets/a50b25fd-5774-41b8-af3d-4292a05e6eda)
+**Phase 3: Wakeup from Deep Sleep due to MPU6500 Interrupt**
+This phase is initiated when the MPU6500 detects significant motion while the device is in deep sleep, triggering an external interrupt.
+* **Wakeup Cause Recognition**: The program recognizes that the wakeup reason was `ESP_SLEEP_WAKEUP_EXT0`, indicating an MPU6500 interrupt.
+* **Motion Anomaly Flag**: The `motion_anomaly` flag is set to `true`.
+* **High-Frequency Sampling**: Similar to the INA timer wakeup, a `high_freq_sampling` task is created. This task collects high-frequency data from both sensors for detailed analysis.
+* **Feature Collection and Classification**: The collected sensor data is processed, and the classifier determines if the detected motion constitutes an actual anomaly.
+* **MQTT Communication (if anomaly)**: If an anomaly is confirmed by the classifier, the data is sent via MQTT.
+* **Return to Deep Sleep**: After processing the motion event, the system transitions back into deep sleep.
 
 ### Why Monitor Server Rack Fans Every 30 Seconds?
 
