@@ -352,29 +352,36 @@ To establish an upper bound for the system's lifetime, we'll simplify our energy
 
 ## Power Consumption Specifications
 
-| Component/State | Power (mW) | Current (mA)* |
-|-----------------|------------|---------------|
-| Initialization | 130 | 35.1 |
-| Anomaly Detection | 150 | 40.5 |
-| WiFi/MQTT Communication | 400 | 108.1 |
-| Deep Sleep | 0.6 | 0.16 |
+### Case : 50,000 MTBF (Effectively No Anomalies)
 
+In this scenario, the anomaly rate is extremely low, so we consider the "no anomaly" path for the vast majority of cycles.
 
-## Battery Life Calculations
-In case of **Battery**: 4000mAh Li-ion (3.7V)
-#### Best Case (No Anomalies Detected)
-- **Cycles per day**: 720 (every 2 minutes)
-- **Energy per cycle**: 0.0147 mAh
-- **Daily consumption**: 10.58 mAh
-- **Battery life**: **273 days (9.1 months)**
+A cycle is 120 seconds.
 
-### Best Case Scenario (No Anomalies)
+    Anomaly Detection (No Anomaly):
+        Duration: 2 seconds
+        Current: 40.54 mA
+        Charge consumed: 0.02252 mAh
 
-| Component | Energy (mAh/day) | Percentage |
-|-----------|------------------|------------|
-| Deep Sleep | 9.60 | 90.8% |
-| Anomaly Detection | 0.97 | 9.2% |
-| **Total** | **10.57** | **100%** |
+    Deep Sleep:
+        Duration: 118 seconds
+        Current: 0.16 mA
+        Charge consumed: 0.005244 mAh
+
+Total charge consumed per 120-second cycle (dominated by no anomaly):
+0.02252 mAh+0.005244 mAh=0.027764 mAh
+
+Average Current (50,000 MTBF):
+(0.027764 mAh/120 s)×3600 s/hr=0.8329 mA
+
+Battery Life (50,000 MTBF):
+
+Battery Life (hours) = Battery Capacity (mAh) / Average Current (mA)
+Battery Life (hours) = 4000 mAh/0.8329 mA=4802.7 hours
+
+Battery Life (days) = 4802.7 hours/24 hours/day=200.11 days
+
+Battery Life (months) = 200.11 days/30.4375 days/month (avg)=6.57 months
 ---
 
 ## Security Implications:
