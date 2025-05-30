@@ -18,7 +18,7 @@
 
 // Multiplier applied to the maximum observed baseline deviation to set the motion threshold.
 // A higher value makes the motion detection less sensitive.
-#define THRESHOLD_MULTIPLIER 2.0
+#define THRESHOLD_MULTIPLIER 2.5
 
 // The GPIO pin connected to the MPU6500's interrupt (INT) pin.
 #define INT_PIN 2

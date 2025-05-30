@@ -22,7 +22,7 @@ int raw_feature_get_data(size_t offset, size_t length, float *out_ptr) {
 void task_avg_acc(void *args){
   for(int i =0; i< num_samples;i++){
     motion_samples[i] = get_rms_reading_mpu(my_mpu6500,NUM_AVG_ACC);
-    //Serial.printf("x_rms:%.2f , y_rms:%.2f , z_rms:%.2f \n",motion_samples[i].x,motion_samples[i].z,motion_samples[i].y);
+    Serial.printf("x_rms:%.2f , y_rms:%.2f , z_rms:%.2f \n",motion_samples[i].x,motion_samples[i].z,motion_samples[i].y);
     vTaskDelay(pdMS_TO_TICKS(1000/g_sampling_frequency));
   }
 
@@ -33,7 +33,7 @@ void task_avg_acc(void *args){
 void task_flt_ina(void *args){
   for(int i =0; i< num_samples;i++){
     ina_samples[i] = read_ina_filtered();
-    //Serial.printf("pw:%.2f \n",read_ina_filtered());
+    Serial.printf("pw:%.2f \n",ina_samples[i]);
     vTaskDelay(pdMS_TO_TICKS(1000/g_sampling_frequency));
   }
 

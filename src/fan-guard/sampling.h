@@ -15,7 +15,7 @@
 // --- Constants ---
 // FFT sampling rate in Hz. This defines the number of samples collected
 // for both motion and INA data within a specific period.
-#define SAMPLE_RATE 1024
+#define SAMPLE_RATE 1000
 #define NUM_AVG_ACC 20
 extern int g_sampling_frequency;
 

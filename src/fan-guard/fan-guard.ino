@@ -12,6 +12,9 @@
 #include "MPU6500-library.h"
 #include "sampling.h"
 #include "driver/uart.h"
+#include "esp_bt.h" // Already included
+#include "driver/adc.h"
+
 
 #define DEEP_SLEEP_INA_SEC 10
 #define DEEP_SLEEP_INA_US (DEEP_SLEEP_INA_SEC * 1000ULL * 1000ULL)
@@ -34,6 +37,7 @@ void first_boot_init(){
 }
 
 void setup() {
+  unsigned long start=millis();
   Serial.begin(115200);
   Wire.begin(41,42);
   // Set up interrupt pin
@@ -42,7 +46,6 @@ void setup() {
   acc_init();
   // Queues initialization
   init_shared_queues();
-  unsigned long start=millis();
 
 
 
@@ -65,13 +68,13 @@ void setup() {
 
   if(motion_anomaly){
     motion_anomaly = false;
-    Serial.print("\n*** Anomaly \n***");
+    //Serial.print("\n*** Anomaly \n***");
     xTaskCreate(high_freq_sampling, "high_freq_sampling", 8096, xTaskGetCurrentTaskHandle(), 1, NULL);
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
   }
   
   // Enable the motion interrupt with our calculated threshold
-  Serial.printf("TOTAL TIME UP: %d",millis()-start);
+  //Serial.printf("TOTAL TIME UP: %d",millis()-start);
   deep_sleep();
 }
 
