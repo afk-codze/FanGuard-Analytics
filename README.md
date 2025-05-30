@@ -382,6 +382,7 @@ Battery Life (hours) = 4000 mAh/0.8329 mA=4802.7 hours
 Battery Life (days) = 4802.7 hours/24 hours/day=200.11 days
 
 Battery Life (months) = 200.11 days/30.4375 days/month (avg)=6.57 months
+
 ---
 
 ## Security Implications:
