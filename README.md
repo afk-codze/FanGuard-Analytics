@@ -41,7 +41,6 @@ Edge-AI predictive-maintenance node for server-rack fans
   - [Battery Life Calculations](#battery-life-calculations)
       - [Best Case (No Anomalies Detected)](#best-case-no-anomalies-detected)
     - [Best Case Scenario (No Anomalies)](#best-case-scenario-no-anomalies)
-  - [| **Total** | **10.57** | **100%** |](#-total--1057--100-)
   - [Security Implications:](#security-implications)
     - [Security Threats](#security-threats)
     - [First Implementation: HMAC](#first-implementation-hmac)
