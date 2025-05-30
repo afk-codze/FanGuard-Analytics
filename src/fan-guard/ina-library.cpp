@@ -31,8 +31,7 @@ void ina219_init() {
     Serial.println("ina219 is connected");
   }
 
-  ina219.setCalibration_16V_400mA();
-
+  ina219.setCalibration_32V_1A();
   // Initialize filters with first reading
   vTaskDelay(pdMS_TO_TICKS(1000));
   filtered_bus_voltage = ina219.getBusVoltage_V();
@@ -69,12 +68,32 @@ xyzFloat get_rms_reading_mpu(MPU6500_WE& mpu_instance, int samples) {
   return temp;
 }
 
+// float get_averaged_reading(float (*read_function)(), int samples) { 
+//   float sum = 0;
+//   for (int i = 0; i < samples; i++) {
+//     sum += read_function();
+//     vTaskDelay(pdMS_TO_TICKS(1000/g_sampling_frequency));
+//   }
+//   return sum / samples;
+// }
+
 float get_averaged_reading(float (*read_function)(), int samples) { 
   float sum = 0;
+  float prev_good_reading = 0;
+  
   for (int i = 0; i < samples; i++) {
-    sum += read_function();
+    float reading = read_function();
+    
+    if (reading < -1) {
+      reading = prev_good_reading;
+    } else{
+      prev_good_reading = reading;  // Store as reference for next iteration
+    }
+    
+    sum += reading;
     vTaskDelay(pdMS_TO_TICKS(1000/g_sampling_frequency));
   }
+  
   return sum / samples;
 }
 
@@ -95,7 +114,13 @@ float low_pass_filter(float new_value, float prev_filtered, float alpha) {
 }
 
 float read_ina_filtered() {             
-  float raw_power = get_averaged_reading(get_power, SAMPLE_COUNT);                   
+  float raw_power = get_averaged_reading(get_power, SAMPLE_COUNT);
+  
+  // Filter out clearly erroneous negative values
+  if (raw_power < -1.0) {  // Adjust threshold as needed
+    raw_power = filtered_power;  // Use previous good value
+  }
+
   if (first_reading) {
     filtered_power = raw_power;
     first_reading = false;
