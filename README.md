@@ -5,8 +5,7 @@ Edge-AI predictive-maintenance node for server-rack fans
 
 # Table of Contents
 
-- [FanGuard - Analytics](#fanguard---analytics)
-- [Table of Contents](#table-of-contents)
+
   - [👨‍💻 **Team:**](#-team)
   - [Introduction](#introduction)
   - [Why we chose RMS?](#why-we-chose-rms)
